@@ -88,17 +88,58 @@ export async function atualizarFilme(id: string, data: CreateFilmeData) {
   }
 }
 
-export async function removerFilme(id: string) {
+export async function desativarFilme(id: string) {
   try {
-    await prisma.filme.delete({
+    const filme = await prisma.filme.update({
       where: { id },
+      data: { ativo: false },
     })
 
     revalidatePath('/admin/filmes')
-    return { success: true }
+    return { success: true, data: filme }
   } catch (error) {
-    console.error('Erro ao remover filme:', error)
-    return { success: false, error: 'Erro ao remover filme' }
+    console.error('Erro ao desativar filme:', error)
+    return { success: false, error: 'Erro ao desativar filme' }
+  }
+}
+
+export async function ativarFilme(id: string) {
+  try {
+    const filme = await prisma.filme.update({
+      where: { id },
+      data: { ativo: true },
+    })
+
+    revalidatePath('/admin/filmes')
+    return { success: true, data: filme }
+  } catch (error) {
+    console.error('Erro ao ativar filme:', error)
+    return { success: false, error: 'Erro ao ativar filme' }
+  }
+}
+
+export async function listarFilmesAtivos() {
+  try {
+    const filmes = await prisma.filme.findMany({
+      where: { ativo: true },
+      include: {
+        sessoes: {
+          where: {
+            ativo: true,
+            dataHora: {
+              gte: new Date(),
+            },
+          },
+          orderBy: { dataHora: 'asc' },
+        },
+      },
+      orderBy: { titulo: 'asc' },
+    })
+
+    return { success: true, data: filmes }
+  } catch (error) {
+    console.error('Erro ao listar filmes ativos:', error)
+    return { success: false, error: 'Erro ao buscar filmes' }
   }
 }
 
@@ -106,6 +147,7 @@ export async function buscarFilmesPorGenero(genero: string) {
   try {
     const filmes = await prisma.filme.findMany({
       where: {
+        ativo: true,
         genero: {
           contains: genero,
           mode: 'insensitive',
@@ -114,6 +156,7 @@ export async function buscarFilmesPorGenero(genero: string) {
       include: {
         sessoes: {
           where: {
+            ativo: true,
             dataHora: {
               gte: new Date(),
             },

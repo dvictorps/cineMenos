@@ -25,6 +25,7 @@ import {
   Grid3X3,
   Loader2,
 } from "lucide-react";
+import { toast } from "sonner";
 
 interface EditarSessaoPageProps {
   params: Promise<{
@@ -86,12 +87,12 @@ export default function EditarSessaoPage({ params }: EditarSessaoPageProps) {
             preco: sessao.preco.toString(),
           });
         } else {
-          alert("Sessão não encontrada");
+          toast.error("Sessão não encontrada");
           router.push("/admin/sessoes");
         }
       } catch (error) {
         console.error("Erro ao carregar dados:", error);
-        alert("Erro ao carregar dados");
+        toast.error("Erro ao carregar dados");
         router.push("/admin/sessoes");
       } finally {
         setCarregando(false);
@@ -118,12 +119,13 @@ export default function EditarSessaoPage({ params }: EditarSessaoPageProps) {
       });
 
       if (result.success) {
+        toast.success("Sessão atualizada com sucesso!");
         router.push("/admin/sessoes");
       } else {
-        alert("Erro ao atualizar sessão: " + result.error);
+        toast.error("Erro ao atualizar sessão: " + result.error);
       }
     } catch {
-      alert("Erro ao atualizar sessão");
+      toast.error("Erro ao atualizar sessão");
     } finally {
       setLoading(false);
     }
@@ -313,7 +315,11 @@ export default function EditarSessaoPage({ params }: EditarSessaoPageProps) {
                 </div>
 
                 <div className="flex gap-4 pt-4">
-                  <Button type="submit" disabled={loading} className="flex-1">
+                  <Button
+                    type="submit"
+                    disabled={loading}
+                    className="flex-1 border border-primary cursor-pointer"
+                  >
                     {loading ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -331,6 +337,7 @@ export default function EditarSessaoPage({ params }: EditarSessaoPageProps) {
                     variant="outline"
                     onClick={handleCancel}
                     disabled={loading}
+                    className="cursor-pointer"
                   >
                     Cancelar
                   </Button>
@@ -364,8 +371,16 @@ export default function EditarSessaoPage({ params }: EditarSessaoPageProps) {
                     {filmeSelecionado.titulo}
                   </h3>
                   <div className="flex gap-2">
-                    <Badge variant="outline">{filmeSelecionado.genero}</Badge>
-                    <Badge variant="secondary">
+                    <Badge
+                      variant="outline"
+                      className="cursor-pointer hover:bg-muted transition-colors duration-200"
+                    >
+                      {filmeSelecionado.genero}
+                    </Badge>
+                    <Badge
+                      variant="secondary"
+                      className="cursor-pointer bg-blue-600 text-white hover:bg-blue-500 transition-colors duration-200"
+                    >
                       {filmeSelecionado.classificacao}
                     </Badge>
                   </div>

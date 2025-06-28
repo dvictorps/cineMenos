@@ -16,12 +16,42 @@ interface ClassificationSelectorProps {
 }
 
 const classificacoes: ClassificationOption[] = [
-  { value: "LIVRE", label: "Livre", color: "bg-green-600 text-white" },
-  { value: "10", label: "10 anos", color: "bg-blue-600 text-white" },
-  { value: "12", label: "12 anos", color: "bg-yellow-600 text-white" },
-  { value: "14", label: "14 anos", color: "bg-orange-600 text-white" },
-  { value: "16", label: "16 anos", color: "bg-red-600 text-white" },
-  { value: "18", label: "18 anos", color: "bg-purple-600 text-white" },
+  {
+    value: "LIVRE",
+    label: "Livre",
+    color:
+      "bg-green-600 text-white hover:bg-green-500 transition-colors duration-200 cursor-pointer",
+  },
+  {
+    value: "10",
+    label: "10 anos",
+    color:
+      "bg-blue-600 text-white hover:bg-blue-500 transition-colors duration-200 cursor-pointer",
+  },
+  {
+    value: "12",
+    label: "12 anos",
+    color:
+      "bg-yellow-600 text-white hover:bg-yellow-500 transition-colors duration-200 cursor-pointer",
+  },
+  {
+    value: "14",
+    label: "14 anos",
+    color:
+      "bg-orange-600 text-white hover:bg-orange-500 transition-colors duration-200 cursor-pointer",
+  },
+  {
+    value: "16",
+    label: "16 anos",
+    color:
+      "bg-red-600 text-white hover:bg-red-500 transition-colors duration-200 cursor-pointer",
+  },
+  {
+    value: "18",
+    label: "18 anos",
+    color:
+      "bg-purple-600 text-white hover:bg-purple-500 transition-colors duration-200 cursor-pointer",
+  },
 ];
 
 export function ClassificationSelector({

@@ -12,7 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { listarFilmes } from "@/actions";
+import { listarFilmes, desativarFilme, ativarFilme } from "@/actions";
 import {
   Plus,
   Search,
@@ -33,6 +33,7 @@ interface FilmeData {
   genero: string;
   classificacao: string;
   banner: string | null;
+  ativo: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -85,6 +86,24 @@ export default function FilmesPage() {
     new Set(filmes.map((filme) => filme.genero))
   );
 
+  const handleToggleAtivo = async (filmeId: string, ativo: boolean) => {
+    try {
+      const action = ativo ? desativarFilme : ativarFilme;
+      const result = await action(filmeId);
+
+      if (result.success) {
+        // Atualizar estado local
+        setFilmes((prev) =>
+          prev.map((filme) =>
+            filme.id === filmeId ? { ...filme, ativo: !ativo } : filme
+          )
+        );
+      }
+    } catch (error) {
+      console.error("Erro ao alterar status do filme:", error);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex-1 flex items-center justify-center p-6">
@@ -99,19 +118,19 @@ export default function FilmesPage() {
   const getClassificacaoColor = (classificacao: string) => {
     switch (classificacao) {
       case "LIVRE":
-        return "bg-green-600 text-white";
+        return "bg-green-600 text-white hover:bg-green-500 transition-colors duration-200";
       case "10":
-        return "bg-blue-600 text-white";
+        return "bg-blue-600 text-white hover:bg-blue-500 transition-colors duration-200";
       case "12":
-        return "bg-yellow-600 text-white";
+        return "bg-yellow-600 text-white hover:bg-yellow-500 transition-colors duration-200";
       case "14":
-        return "bg-orange-600 text-white";
+        return "bg-orange-600 text-white hover:bg-orange-500 transition-colors duration-200";
       case "16":
-        return "bg-red-600 text-white";
+        return "bg-red-600 text-white hover:bg-red-500 transition-colors duration-200";
       case "18":
-        return "bg-purple-600 text-white";
+        return "bg-purple-600 text-white hover:bg-purple-500 transition-colors duration-200";
       default:
-        return "bg-gray-600 text-white";
+        return "bg-gray-600 text-white hover:bg-gray-500 transition-colors duration-200";
     }
   };
 
@@ -218,7 +237,7 @@ export default function FilmesPage() {
               {filmesFiltrados.map((filme) => (
                 <div
                   key={filme.id}
-                  className="grid grid-cols-1 md:grid-cols-12 gap-4 p-4 border rounded-lg hover:bg-muted/50 transition-colors duration-200 group"
+                  className="grid grid-cols-1 md:grid-cols-12 gap-4 p-4 border rounded-lg hover:bg-muted/50 transition-colors duration-200 group cursor-pointer"
                 >
                   {/* Mobile Layout */}
                   <div className="md:hidden space-y-3">
@@ -240,9 +259,21 @@ export default function FilmesPage() {
                       <Badge variant="outline">{filme.genero}</Badge>
                       <Badge
                         variant="secondary"
-                        className={getClassificacaoColor(filme.classificacao)}
+                        className={`${getClassificacaoColor(
+                          filme.classificacao
+                        )} cursor-pointer`}
                       >
                         {filme.classificacao}
+                      </Badge>
+                      <Badge
+                        variant="secondary"
+                        className={`${
+                          filme.ativo
+                            ? "bg-green-600 text-white hover:bg-green-500 transition-colors duration-200"
+                            : "bg-gray-600 text-white hover:bg-gray-500 transition-colors duration-200"
+                        } cursor-pointer`}
+                      >
+                        {filme.ativo ? "Ativo" : "Inativo"}
                       </Badge>
                       <div className="flex items-center text-sm text-muted-foreground">
                         <Clock className="mr-1 h-3 w-3" />
@@ -256,7 +287,11 @@ export default function FilmesPage() {
                       </span>
                       <div className="flex gap-2">
                         <Link href={`/admin/filmes/${filme.id}/editar`}>
-                          <Button variant="outline" size="sm">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-muted-foreground hover:text-blue-400"
+                          >
                             <Edit className="mr-1 h-3 w-3" />
                             Editar
                           </Button>
@@ -264,10 +299,26 @@ export default function FilmesPage() {
                         <Button
                           variant="outline"
                           size="sm"
-                          className="text-red-600 hover:text-red-700"
+                          onClick={() =>
+                            handleToggleAtivo(filme.id, filme.ativo)
+                          }
+                          className={
+                            filme.ativo
+                              ? "text-red-600 hover:text-red-700"
+                              : "text-green-600 hover:text-green-700"
+                          }
                         >
-                          <Trash2 className="mr-1 h-3 w-3" />
-                          Excluir
+                          {filme.ativo ? (
+                            <>
+                              <Trash2 className="mr-1 h-3 w-3" />
+                              Desativar
+                            </>
+                          ) : (
+                            <>
+                              <Trash2 className="mr-1 h-3 w-3" />
+                              Ativar
+                            </>
+                          )}
                         </Button>
                       </div>
                     </div>
@@ -298,12 +349,26 @@ export default function FilmesPage() {
                     </div>
 
                     <div className="col-span-2">
-                      <Badge
-                        variant="secondary"
-                        className={getClassificacaoColor(filme.classificacao)}
-                      >
-                        {filme.classificacao}
-                      </Badge>
+                      <div className="flex gap-2">
+                        <Badge
+                          variant="secondary"
+                          className={`${getClassificacaoColor(
+                            filme.classificacao
+                          )} cursor-pointer`}
+                        >
+                          {filme.classificacao}
+                        </Badge>
+                        <Badge
+                          variant="secondary"
+                          className={`${
+                            filme.ativo
+                              ? "bg-green-600 text-white hover:bg-green-500 transition-colors duration-200"
+                              : "bg-gray-600 text-white hover:bg-gray-500 transition-colors duration-200"
+                          } cursor-pointer`}
+                        >
+                          {filme.ativo ? "Ativo" : "Inativo"}
+                        </Badge>
+                      </div>
                     </div>
 
                     <div className="col-span-2">
@@ -318,7 +383,7 @@ export default function FilmesPage() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-8 w-8 hover:scale-110 transition-transform duration-200"
+                            className="h-8 w-8 text-muted-foreground hover:text-blue-400 hover:scale-110 transition-all duration-200"
                           >
                             <Edit className="h-3 w-3" />
                           </Button>
@@ -326,7 +391,17 @@ export default function FilmesPage() {
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-8 w-8 text-red-600 hover:text-red-700 hover:scale-110 transition-all duration-200"
+                          onClick={() =>
+                            handleToggleAtivo(filme.id, filme.ativo)
+                          }
+                          className={`h-8 w-8 hover:scale-110 transition-all duration-200 ${
+                            filme.ativo
+                              ? "text-red-600 hover:text-red-700"
+                              : "text-green-600 hover:text-green-700"
+                          }`}
+                          title={
+                            filme.ativo ? "Desativar Filme" : "Ativar Filme"
+                          }
                         >
                           <Trash2 className="h-3 w-3" />
                         </Button>

@@ -109,7 +109,11 @@ export function MovieForm({
               />
 
               <div className="flex gap-4 pt-4">
-                <Button type="submit" disabled={loading} className="flex-1">
+                <Button
+                  type="submit"
+                  disabled={loading}
+                  className="flex-1 border border-primary cursor-pointer"
+                >
                   {loading ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -124,7 +128,12 @@ export function MovieForm({
                 </Button>
 
                 {onCancel && (
-                  <Button variant="outline" type="button" onClick={onCancel}>
+                  <Button
+                    variant="outline"
+                    type="button"
+                    onClick={onCancel}
+                    className="cursor-pointer"
+                  >
                     {cancelText}
                   </Button>
                 )}
@@ -161,16 +170,21 @@ export function MovieForm({
 
                 <div className="flex flex-wrap gap-2 pt-2">
                   {formData.genero && (
-                    <Badge variant="outline">{formData.genero}</Badge>
+                    <Badge
+                      variant="outline"
+                      className="cursor-pointer hover:bg-muted transition-colors duration-200"
+                    >
+                      {formData.genero}
+                    </Badge>
                   )}
                   {formData.classificacao && (
                     <Badge
                       variant="secondary"
-                      className={
+                      className={`cursor-pointer transition-colors duration-200 ${
                         classificacoes.find(
                           (c) => c.value === formData.classificacao
                         )?.color || ""
-                      }
+                      }`}
                     >
                       {
                         classificacoes.find(

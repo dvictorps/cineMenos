@@ -12,7 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { listarSessoes } from "@/actions";
+import { listarSessoes, desativarSessao, ativarSessao } from "@/actions";
 import {
   Plus,
   Search,
@@ -36,6 +36,7 @@ interface SessaoWithFilme {
   linhas: number;
   colunas: number;
   preco: number;
+  ativo: boolean;
   filme: {
     titulo: string;
     genero: string;
@@ -111,6 +112,24 @@ export default function SessoesPage() {
     return true;
   });
 
+  const handleToggleAtivo = async (sessaoId: string, ativo: boolean) => {
+    try {
+      const action = ativo ? desativarSessao : ativarSessao;
+      const result = await action(sessaoId);
+
+      if (result.success) {
+        // Atualizar estado local
+        setSessoes((prev) =>
+          prev.map((sessao) =>
+            sessao.id === sessaoId ? { ...sessao, ativo: !ativo } : sessao
+          )
+        );
+      }
+    } catch (error) {
+      console.error("Erro ao alterar status da sessão:", error);
+    }
+  };
+
   const formatarData = (data: Date) => {
     return new Date(data).toLocaleDateString("pt-BR", {
       day: "2-digit",
@@ -131,11 +150,23 @@ export default function SessoesPage() {
     const sessaoData = new Date(dataHora);
 
     if (sessaoData < agora) {
-      return { label: "Finalizada", color: "bg-gray-600 text-white" };
+      return {
+        label: "Finalizada",
+        color:
+          "bg-gray-600 text-white hover:bg-gray-500 transition-colors duration-200",
+      };
     } else if (sessaoData.getTime() - agora.getTime() < 30 * 60 * 1000) {
-      return { label: "Em breve", color: "bg-yellow-600 text-white" };
+      return {
+        label: "Em breve",
+        color:
+          "bg-yellow-600 text-white hover:bg-yellow-500 transition-colors duration-200",
+      };
     } else {
-      return { label: "Agendada", color: "bg-green-600 text-white" };
+      return {
+        label: "Agendada",
+        color:
+          "bg-green-600 text-white hover:bg-green-500 transition-colors duration-200",
+      };
     }
   };
 
@@ -269,7 +300,7 @@ export default function SessoesPage() {
                 return (
                   <div
                     key={sessao.id}
-                    className="grid grid-cols-1 md:grid-cols-12 gap-4 p-4 border rounded-lg hover:bg-muted/50 transition-colors duration-200 group"
+                    className="grid grid-cols-1 md:grid-cols-12 gap-4 p-4 border rounded-lg hover:bg-muted/50 transition-colors duration-200 group cursor-pointer"
                   >
                     <div className="md:hidden space-y-3">
                       <div className="flex items-start justify-between">
@@ -300,8 +331,21 @@ export default function SessoesPage() {
                           <Users className="mr-1 h-3 w-3" />
                           {assentosOcupados}/{totalAssentos}
                         </div>
-                        <Badge variant="secondary" className={status.color}>
+                        <Badge
+                          variant="secondary"
+                          className={`${status.color} cursor-pointer`}
+                        >
                           {status.label}
+                        </Badge>
+                        <Badge
+                          variant="secondary"
+                          className={`${
+                            sessao.ativo
+                              ? "bg-green-600 text-white hover:bg-green-500 transition-colors duration-200"
+                              : "bg-gray-600 text-white hover:bg-gray-500 transition-colors duration-200"
+                          } cursor-pointer`}
+                        >
+                          {sessao.ativo ? "Ativa" : "Inativa"}
                         </Badge>
                         <span className="text-sm font-medium">
                           R$ {sessao.preco.toFixed(2)}
@@ -320,14 +364,18 @@ export default function SessoesPage() {
                             <Button
                               variant="outline"
                               size="sm"
-                              className="text-blue-600 hover:text-blue-700"
+                              className="text-blue-400 hover:text-blue-500"
                             >
                               <Ticket className="mr-1 h-3 w-3" />
                               Reservar
                             </Button>
                           </Link>
                           <Link href={`/admin/sessoes/${sessao.id}/editar`}>
-                            <Button variant="outline" size="sm">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="text-muted-foreground hover:text-blue-400"
+                            >
                               <Edit className="mr-1 h-3 w-3" />
                               Editar
                             </Button>
@@ -335,10 +383,26 @@ export default function SessoesPage() {
                           <Button
                             variant="outline"
                             size="sm"
-                            className="text-red-600 hover:text-red-700"
+                            onClick={() =>
+                              handleToggleAtivo(sessao.id, sessao.ativo)
+                            }
+                            className={
+                              sessao.ativo
+                                ? "text-red-600 hover:text-red-700"
+                                : "text-green-600 hover:text-green-700"
+                            }
                           >
-                            <Trash2 className="mr-1 h-3 w-3" />
-                            Excluir
+                            {sessao.ativo ? (
+                              <>
+                                <Trash2 className="mr-1 h-3 w-3" />
+                                Desativar
+                              </>
+                            ) : (
+                              <>
+                                <Trash2 className="mr-1 h-3 w-3" />
+                                Ativar
+                              </>
+                            )}
                           </Button>
                         </div>
                       </div>
@@ -392,9 +456,24 @@ export default function SessoesPage() {
                       </div>
 
                       <div className="col-span-1">
-                        <Badge variant="secondary" className={status.color}>
-                          {status.label}
-                        </Badge>
+                        <div className="flex flex-col gap-1">
+                          <Badge
+                            variant="secondary"
+                            className={`${status.color} cursor-pointer`}
+                          >
+                            {status.label}
+                          </Badge>
+                          <Badge
+                            variant="secondary"
+                            className={`${
+                              sessao.ativo
+                                ? "bg-green-600 text-white hover:bg-green-500 transition-colors duration-200"
+                                : "bg-gray-600 text-white hover:bg-gray-500 transition-colors duration-200"
+                            } cursor-pointer`}
+                          >
+                            {sessao.ativo ? "Ativa" : "Inativa"}
+                          </Badge>
+                        </div>
                       </div>
 
                       <div className="col-span-1">
@@ -409,7 +488,7 @@ export default function SessoesPage() {
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:scale-110 transition-all duration-200"
+                              className="h-8 w-8 text-blue-400 hover:text-blue-500 hover:scale-110 transition-all duration-200"
                               title="Reservar Assentos"
                             >
                               <Ticket className="h-3 w-3" />
@@ -419,7 +498,7 @@ export default function SessoesPage() {
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-8 w-8 hover:scale-110 transition-transform duration-200"
+                              className="h-8 w-8 text-muted-foreground hover:text-blue-400 hover:scale-110 transition-all duration-200"
                               title="Editar Sessão"
                             >
                               <Edit className="h-3 w-3" />
@@ -428,8 +507,19 @@ export default function SessoesPage() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-8 w-8 text-red-600 hover:text-red-700 hover:scale-110 transition-all duration-200"
-                            title="Excluir Sessão"
+                            onClick={() =>
+                              handleToggleAtivo(sessao.id, sessao.ativo)
+                            }
+                            className={`h-8 w-8 hover:scale-110 transition-all duration-200 ${
+                              sessao.ativo
+                                ? "text-red-600 hover:text-red-700"
+                                : "text-green-600 hover:text-green-700"
+                            }`}
+                            title={
+                              sessao.ativo
+                                ? "Desativar Sessão"
+                                : "Ativar Sessão"
+                            }
                           >
                             <Trash2 className="h-3 w-3" />
                           </Button>

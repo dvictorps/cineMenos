@@ -26,6 +26,7 @@ import {
   Loader2,
 } from "lucide-react";
 import Link from "next/link";
+import { toast } from "sonner";
 
 export default function NovaSessaoPage() {
   const router = useRouter();
@@ -87,12 +88,13 @@ export default function NovaSessaoPage() {
       });
 
       if (result.success) {
+        toast.success("Sessão criada com sucesso!");
         router.push("/admin/sessoes");
       } else {
-        alert("Erro ao criar sessão: " + result.error);
+        toast.error("Erro ao criar sessão: " + result.error);
       }
     } catch {
-      alert("Erro ao criar sessão");
+      toast.error("Erro ao criar sessão");
     } finally {
       setLoading(false);
     }
@@ -262,7 +264,11 @@ export default function NovaSessaoPage() {
                 </div>
 
                 <div className="flex gap-4 pt-4">
-                  <Button type="submit" disabled={loading} className="flex-1">
+                  <Button
+                    type="submit"
+                    disabled={loading}
+                    className="flex-1 border border-primary cursor-pointer"
+                  >
                     {loading ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -277,7 +283,11 @@ export default function NovaSessaoPage() {
                   </Button>
 
                   <Link href="/admin/sessoes">
-                    <Button variant="outline" type="button">
+                    <Button
+                      variant="outline"
+                      type="button"
+                      className="cursor-pointer"
+                    >
                       Cancelar
                     </Button>
                   </Link>
@@ -305,8 +315,16 @@ export default function NovaSessaoPage() {
                   </div>
 
                   <div className="flex flex-wrap gap-2">
-                    <Badge variant="outline">{filmeSelecionado.genero}</Badge>
-                    <Badge variant="secondary">
+                    <Badge
+                      variant="outline"
+                      className="cursor-pointer hover:bg-muted transition-colors duration-200"
+                    >
+                      {filmeSelecionado.genero}
+                    </Badge>
+                    <Badge
+                      variant="secondary"
+                      className="cursor-pointer bg-blue-600 text-white hover:bg-blue-500 transition-colors duration-200"
+                    >
                       {filmeSelecionado.classificacao}
                     </Badge>
                     <div className="flex items-center text-sm text-muted-foreground">

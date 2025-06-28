@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { MovieForm, type MovieFormData } from "@/components/forms/movie-form";
 import { buscarFilmePorId, atualizarFilme } from "@/actions";
 import { Loader2 } from "lucide-react";
+import { toast } from "sonner";
 
 interface EditarFilmePageProps {
   params: Promise<{
@@ -41,11 +42,11 @@ export default function EditarFilmePage({ params }: EditarFilmePageProps) {
             banner: filme.banner || "",
           });
         } else {
-          alert("Filme não encontrado");
+          toast.error("Filme não encontrado");
           router.push("/admin/filmes");
         }
       } catch {
-        alert("Erro ao carregar filme");
+        toast.error("Erro ao carregar filme");
         router.push("/admin/filmes");
       } finally {
         setCarregando(false);
@@ -70,12 +71,13 @@ export default function EditarFilmePage({ params }: EditarFilmePageProps) {
       });
 
       if (result.success) {
+        toast.success("Filme atualizado com sucesso!");
         router.push("/admin/filmes");
       } else {
-        alert("Erro ao atualizar filme: " + result.error);
+        toast.error("Erro ao atualizar filme: " + result.error);
       }
     } catch {
-      alert("Erro ao atualizar filme");
+      toast.error("Erro ao atualizar filme");
     } finally {
       setLoading(false);
     }
