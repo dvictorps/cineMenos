@@ -1,0 +1,65 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Filme {
+  id              String    @id @default(cuid())
+  titulo          String
+  descricao       String
+  duracao         Int       // duração em minutos
+  genero          String
+  classificacao   String    // classificação indicativa
+  banner          String?   // URL do banner/pôster do filme
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  // Relacionamentos
+  sessoes         Sessao[]
+  
+  @@map("filmes")
+}
+
+model Sessao {
+  id              String    @id @default(cuid())
+  filmeId         String
+  dataHora        DateTime
+  sala            String
+  linhas          Int       @default(5)  // número de linhas (ex: 5 em 5x10)
+  colunas         Int       @default(10) // número de colunas (ex: 10 em 5x10)
+  preco           Float     // preço por ingresso
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  // Relacionamentos
+  filme           Filme     @relation(fields: [filmeId], references: [id], onDelete: Cascade)
+  reservas        Reserva[]
+  
+  @@map("sessoes")
+}
+
+model Reserva {
+  id              String    @id @default(cuid())
+  sessaoId        String
+  assentos        String    // JSON string com array de assentos (ex: ["A1", "A2"])
+  quantidade      Int       // quantidade de ingressos
+  dataReserva     DateTime  @default(now())
+  tipo            String    // "reserva" ou "cancelamento"
+  nomeCliente     String?   // opcional: nome do cliente
+  emailCliente    String?   // opcional: email do cliente
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  // Relacionamentos
+  sessao          Sessao    @relation(fields: [sessaoId], references: [id], onDelete: Cascade)
+  
+  @@map("reservas")
+}
