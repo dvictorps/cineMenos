@@ -9,6 +9,14 @@ const nextConfig: NextConfig = {
     }
     return config;
   },
+  
+  // Configurações de cache otimizadas
+  experimental: {
+    staleTimes: {
+      dynamic: 30,  // 30 segundos para páginas dinâmicas
+      static: 300,  // 5 minutos para páginas estáticas
+    },
+  },
 };
 
 export default nextConfig;
