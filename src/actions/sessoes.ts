@@ -1,7 +1,8 @@
 'use server'
 
 import { prisma } from '@/lib/prisma'
-import { revalidatePath } from 'next/cache'
+import { revalidatePath, revalidateTag } from 'next/cache'
+import { CACHE_TAGS } from '@/lib/server-cache'
 import type { CreateSessaoData } from '@/lib/types'
 import { startOfDay, endOfDay, addDays } from 'date-fns'
 
@@ -22,6 +23,8 @@ export async function criarSessao(data: CreateSessaoData) {
     })
 
     revalidatePath('/admin/sessoes')
+    revalidateTag(CACHE_TAGS.sessions)
+    revalidateTag(CACHE_TAGS.dashboard)
     return { success: true, data: sessao }
   } catch (error) {
     console.error('Erro ao criar sessão:', error)
@@ -88,6 +91,8 @@ export async function atualizarSessao(id: string, data: CreateSessaoData) {
 
     revalidatePath('/admin/sessoes')
     revalidatePath(`/admin/sessoes/${id}`)
+    revalidateTag(CACHE_TAGS.sessions)
+    revalidateTag(CACHE_TAGS.dashboard)
     return { success: true, data: sessao }
   } catch (error) {
     console.error('Erro ao atualizar sessão:', error)
@@ -103,6 +108,8 @@ export async function desativarSessao(id: string) {
     })
 
     revalidatePath('/admin/sessoes')
+    revalidateTag(CACHE_TAGS.sessions)
+    revalidateTag(CACHE_TAGS.dashboard)
     return { success: true, data: sessao }
   } catch (error) {
     console.error('Erro ao desativar sessão:', error)
@@ -118,6 +125,8 @@ export async function ativarSessao(id: string) {
     })
 
     revalidatePath('/admin/sessoes')
+    revalidateTag(CACHE_TAGS.sessions)
+    revalidateTag(CACHE_TAGS.dashboard)
     return { success: true, data: sessao }
   } catch (error) {
     console.error('Erro ao ativar sessão:', error)

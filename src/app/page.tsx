@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -21,6 +22,7 @@ import {
   Filter,
   Ticket,
   Film,
+  Loader2,
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
@@ -47,6 +49,8 @@ export default function HomePage() {
   const [loading, setLoading] = useState(true);
   const [filtroTexto, setFiltroTexto] = useState("");
   const [filtroGenero, setFiltroGenero] = useState("todos");
+  const [adminLoading, setAdminLoading] = useState(false);
+  const router = useRouter();
 
   useEffect(() => {
     const carregarFilmes = async () => {
@@ -64,6 +68,11 @@ export default function HomePage() {
 
     carregarFilmes();
   }, []);
+
+  const handleAdminClick = () => {
+    setAdminLoading(true);
+    router.push("/admin");
+  };
 
   // Lógica de filtros
   const filmesFiltrados = filmes.filter((filme) => {
@@ -154,14 +163,17 @@ export default function HomePage() {
                 Os melhores filmes em cartaz
               </p>
             </div>
-            <Link href="/admin">
-              <Button
-                variant="outline"
-                className="text-white border-white hover:bg-white hover:text-black"
-              >
-                Área Administrativa
-              </Button>
-            </Link>
+            <Button
+              variant="outline"
+              className="text-white border-white hover:bg-white hover:text-black"
+              onClick={handleAdminClick}
+              disabled={adminLoading}
+            >
+              {adminLoading && (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              )}
+              Área Administrativa
+            </Button>
           </div>
         </div>
       </header>

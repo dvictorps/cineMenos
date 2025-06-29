@@ -3,10 +3,11 @@
   "installCommand": "npm ci && npx prisma generate",
   "functions": {
     "src/app/api/**/*.ts": {
-      "maxDuration": 30
+      "maxDuration": 10
     }
   },
   "env": {
-    "PRISMA_GENERATE_SKIP_POSTINSTALL_WARNING": "true"
+    "PRISMA_GENERATE_SKIP_POSTINSTALL_WARNING": "true",
+    "PRISMA_CLIENT_ENGINE_TYPE": "binary"
   }
 } 

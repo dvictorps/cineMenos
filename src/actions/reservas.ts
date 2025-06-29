@@ -1,7 +1,8 @@
 'use server'
 
 import { prisma } from '@/lib/prisma'
-import { revalidatePath } from 'next/cache'
+import { revalidatePath, revalidateTag } from 'next/cache'
+import { CACHE_TAGS } from '@/lib/server-cache'
 
 export interface CriarReservaData {
   sessaoId: string;
@@ -55,6 +56,9 @@ export async function criarReserva(data: CriarReservaData) {
 
     revalidatePath('/admin/reservas')
     revalidatePath(`/admin/sessoes/${data.sessaoId}`)
+    revalidateTag(CACHE_TAGS.reservations)
+    revalidateTag(CACHE_TAGS.sessions)
+    revalidateTag(CACHE_TAGS.dashboard)
     return { success: true, data: reserva }
   } catch (error) {
     console.error('Erro ao criar reserva:', error)
@@ -96,6 +100,9 @@ export async function cancelarReserva(reservaId: string) {
 
     revalidatePath('/reservas')
     revalidatePath(`/sessoes/${reservaExistente.sessaoId}`)
+    revalidateTag(CACHE_TAGS.reservations)
+    revalidateTag(CACHE_TAGS.sessions)
+    revalidateTag(CACHE_TAGS.dashboard)
     return { success: true, data: cancelamento }
   } catch (error) {
     console.error('Erro ao cancelar reserva:', error)

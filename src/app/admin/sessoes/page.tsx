@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,7 +12,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { listarSessoes, desativarSessao, ativarSessao } from "@/actions";
+import { desativarSessao, ativarSessao } from "@/actions";
+import { useSessionCache } from "@/hooks/useSessionCache";
 import {
   Plus,
   Search,
@@ -29,50 +30,15 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 
-interface SessaoWithFilme {
-  id: string;
-  dataHora: Date;
-  sala: string;
-  linhas: number;
-  colunas: number;
-  preco: number;
-  ativo: boolean;
-  filme: {
-    titulo: string;
-    genero: string;
-    duracao: number;
-  };
-  reservas?: Array<{
-    assentos: string;
-  }>;
-}
-
 export default function SessoesPage() {
-  const [sessoes, setSessoes] = useState<SessaoWithFilme[]>([]);
-  const [loading, setLoading] = useState(true);
   const [filtroTexto, setFiltroTexto] = useState("");
   const [filtroData, setFiltroData] = useState("todas");
   const [filtroStatus, setFiltroStatus] = useState("todos");
 
-  useEffect(() => {
-    const carregarSessoes = async () => {
-      try {
-        const result = await listarSessoes();
-        if (result.success && result.data) {
-          setSessoes(result.data);
-        }
-      } catch (error) {
-        console.error("Erro ao carregar sessões:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    carregarSessoes();
-  }, []);
+  const { data: sessoes, isLoading: loading, error } = useSessionCache();
 
   // Lógica de filtros
-  const sessoesFiltradas = sessoes.filter((sessao) => {
+  const sessoesFiltradas = (sessoes || []).filter((sessao) => {
     // Filtro por texto (título do filme)
     if (filtroTexto) {
       const filtroLower = filtroTexto.toLowerCase();
@@ -118,12 +84,7 @@ export default function SessoesPage() {
       const result = await action(sessaoId);
 
       if (result.success) {
-        // Atualizar estado local
-        setSessoes((prev) =>
-          prev.map((sessao) =>
-            sessao.id === sessaoId ? { ...sessao, ativo: !ativo } : sessao
-          )
-        );
+        // Cache will be invalidated automatically by server action
       }
     } catch (error) {
       console.error("Erro ao alterar status da sessão:", error);
@@ -176,6 +137,19 @@ export default function SessoesPage() {
         <div className="text-center">
           <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
           <p className="text-muted-foreground">Carregando sessões...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex-1 flex items-center justify-center p-6">
+        <div className="text-center">
+          <p className="text-red-500 mb-4">Erro ao carregar sessões</p>
+          <Button onClick={() => window.location.reload()}>
+            Tentar novamente
+          </Button>
         </div>
       </div>
     );

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,8 +12,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { listarFilmes, desativarFilme, ativarFilme } from "@/actions";
-import { useAsyncData } from "@/hooks/useAsyncData";
+import { desativarFilme, ativarFilme } from "@/actions";
+import { useMovieCache } from "@/hooks/useMovieCache";
 import { useTextFilter } from "@/hooks/useFilters";
 import { useLoadingState } from "@/hooks/useLoadingState";
 import { Loading } from "@/components/ui/loading";
@@ -34,16 +34,7 @@ export default function FilmesPage() {
   const [filtroTexto, setFiltroTexto] = useState("");
   const [filtroGenero, setFiltroGenero] = useState("todos");
 
-  const listarFilmesCallback = useCallback(() => {
-    return listarFilmes();
-  }, []);
-
-  const {
-    data: filmes,
-    loading,
-    error,
-    refetch,
-  } = useAsyncData(listarFilmesCallback, []);
+  const { data: filmes, isLoading: loading, error } = useMovieCache();
 
   const { withLoading } = useLoadingState();
 
@@ -71,7 +62,7 @@ export default function FilmesPage() {
       async () => {
         const result = await action(filmeId);
         if (result.success) {
-          refetch();
+          // Cache will be invalidated automatically by server action
         }
         return result;
       },
@@ -92,8 +83,10 @@ export default function FilmesPage() {
     return (
       <div className="flex-1 flex items-center justify-center p-6">
         <div className="text-center">
-          <p className="text-red-500 mb-4">{error}</p>
-          <Button onClick={refetch}>Tentar novamente</Button>
+          <p className="text-red-500 mb-4">Erro ao carregar filmes</p>
+          <Button onClick={() => window.location.reload()}>
+            Tentar novamente
+          </Button>
         </div>
       </div>
     );
@@ -108,7 +101,7 @@ export default function FilmesPage() {
             Filmes
           </h2>
           <p className="text-muted-foreground">
-            Gerencie o catálogo de filmes do cinema
+            Gerencie o catálogo de filmes do cinema:
           </p>
         </div>
         <Link href="/admin/filmes/novo">
