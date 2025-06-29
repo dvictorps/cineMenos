@@ -1,4 +1,4 @@
-import type { Filme, Sessao, Reserva } from '../generated/prisma'
+import type { Filme, Sessao, Reserva } from '@prisma/client'
 
 export type FilmeWithSessoes = Filme & {
   sessoes: Sessao[]
