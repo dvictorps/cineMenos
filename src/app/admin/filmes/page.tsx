@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,6 +13,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { listarFilmes, desativarFilme, ativarFilme } from "@/actions";
+import { useAsyncData } from "@/hooks/useAsyncData";
+import { useTextFilter } from "@/hooks/useFilters";
+import { useLoadingState } from "@/hooks/useLoadingState";
+import { Loading } from "@/components/ui/loading";
+import { StatusBadge } from "@/components/ui/status-badge";
+import { formatters } from "@/lib/formatters";
 import {
   Plus,
   Search,
@@ -21,118 +27,73 @@ import {
   Clock,
   Filter,
   MoreHorizontal,
-  Loader2,
 } from "lucide-react";
 import Link from "next/link";
 
-interface FilmeData {
-  id: string;
-  titulo: string;
-  descricao: string;
-  duracao: number;
-  genero: string;
-  classificacao: string;
-  banner: string | null;
-  ativo: boolean;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
 export default function FilmesPage() {
-  const [filmes, setFilmes] = useState<FilmeData[]>([]);
-  const [loading, setLoading] = useState(true);
   const [filtroTexto, setFiltroTexto] = useState("");
   const [filtroGenero, setFiltroGenero] = useState("todos");
 
-  useEffect(() => {
-    const carregarFilmes = async () => {
-      try {
-        const result = await listarFilmes();
-        if (result.success && result.data) {
-          setFilmes(result.data);
-        }
-      } catch (error) {
-        console.error("Erro ao carregar filmes:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
+  const {
+    data: filmes,
+    loading,
+    error,
+    refetch,
+  } = useAsyncData(() => listarFilmes(), []);
 
-    carregarFilmes();
-  }, []);
+  const { withLoading } = useLoadingState();
 
-  // Lógica de filtros
-  const filmesFiltrados = filmes.filter((filme) => {
-    // Filtro por texto (título)
-    if (filtroTexto) {
-      const filtroLower = filtroTexto.toLowerCase();
-      if (!filme.titulo.toLowerCase().includes(filtroLower)) {
-        return false;
-      }
-    }
+  // Lógica de filtros com hook personalizado
+  const filmesComTextoFiltrado = useTextFilter(filmes || [], filtroTexto, [
+    "titulo",
+  ]);
 
-    // Filtro por gênero
+  const filmesFiltrados = filmesComTextoFiltrado.filter((filme) => {
     if (filtroGenero !== "todos") {
-      if (filme.genero.toLowerCase() !== filtroGenero.toLowerCase()) {
-        return false;
-      }
+      return filme.genero.toLowerCase() === filtroGenero.toLowerCase();
     }
-
     return true;
   });
 
   // Obter gêneros únicos
   const generosUnicos = Array.from(
-    new Set(filmes.map((filme) => filme.genero))
+    new Set((filmes || []).map((filme) => filme.genero))
   );
 
   const handleToggleAtivo = async (filmeId: string, ativo: boolean) => {
-    try {
-      const action = ativo ? desativarFilme : ativarFilme;
-      const result = await action(filmeId);
+    const action = ativo ? desativarFilme : ativarFilme;
 
-      if (result.success) {
-        // Atualizar estado local
-        setFilmes((prev) =>
-          prev.map((filme) =>
-            filme.id === filmeId ? { ...filme, ativo: !ativo } : filme
-          )
-        );
+    await withLoading(
+      async () => {
+        const result = await action(filmeId);
+        if (result.success) {
+          refetch();
+        }
+        return result;
+      },
+      {
+        successMessage: ativo
+          ? "Filme desativado com sucesso!"
+          : "Filme ativado com sucesso!",
+        errorMessage: "Erro ao alterar status do filme",
       }
-    } catch (error) {
-      console.error("Erro ao alterar status do filme:", error);
-    }
+    );
   };
 
   if (loading) {
+    return <Loading fullScreen text="Carregando filmes..." />;
+  }
+
+  if (error) {
     return (
       <div className="flex-1 flex items-center justify-center p-6">
         <div className="text-center">
-          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-          <p className="text-muted-foreground">Carregando filmes...</p>
+          <p className="text-red-500 mb-4">{error}</p>
+          <Button onClick={refetch}>Tentar novamente</Button>
         </div>
       </div>
     );
   }
-
-  const getClassificacaoColor = (classificacao: string) => {
-    switch (classificacao) {
-      case "LIVRE":
-        return "bg-green-600 text-white hover:bg-green-500 transition-colors duration-200";
-      case "10":
-        return "bg-blue-600 text-white hover:bg-blue-500 transition-colors duration-200";
-      case "12":
-        return "bg-yellow-600 text-white hover:bg-yellow-500 transition-colors duration-200";
-      case "14":
-        return "bg-orange-600 text-white hover:bg-orange-500 transition-colors duration-200";
-      case "16":
-        return "bg-red-600 text-white hover:bg-red-500 transition-colors duration-200";
-      case "18":
-        return "bg-purple-600 text-white hover:bg-purple-500 transition-colors duration-200";
-      default:
-        return "bg-gray-600 text-white hover:bg-gray-500 transition-colors duration-200";
-    }
-  };
 
   return (
     <div className="flex-1 space-y-4 p-6">
@@ -257,33 +218,29 @@ export default function FilmesPage() {
 
                     <div className="flex flex-wrap gap-2">
                       <Badge variant="outline">{filme.genero}</Badge>
-                      <Badge
-                        variant="secondary"
-                        className={`${getClassificacaoColor(
-                          filme.classificacao
-                        )} cursor-pointer`}
-                      >
-                        {filme.classificacao}
-                      </Badge>
-                      <Badge
-                        variant="secondary"
-                        className={`${
-                          filme.ativo
-                            ? "bg-green-600 text-white hover:bg-green-500 transition-colors duration-200"
-                            : "bg-gray-600 text-white hover:bg-gray-500 transition-colors duration-200"
-                        } cursor-pointer`}
-                      >
-                        {filme.ativo ? "Ativo" : "Inativo"}
-                      </Badge>
+                      <StatusBadge
+                        status={
+                          filme.classificacao as
+                            | "LIVRE"
+                            | "10"
+                            | "12"
+                            | "14"
+                            | "16"
+                            | "18"
+                        }
+                      />
+                      <StatusBadge
+                        status={filme.ativo ? "active" : "inactive"}
+                      />
                       <div className="flex items-center text-sm text-muted-foreground">
                         <Clock className="mr-1 h-3 w-3" />
-                        {filme.duracao}min
+                        {formatters.duration(filme.duracao)}
                       </div>
                     </div>
 
                     <div className="flex items-center justify-between pt-2 border-t">
                       <span className="text-xs text-muted-foreground">
-                        {new Date(filme.createdAt).toLocaleDateString("pt-BR")}
+                        {formatters.date(filme.createdAt)}
                       </span>
                       <div className="flex gap-2">
                         <Link href={`/admin/filmes/${filme.id}/editar`}>
@@ -344,36 +301,32 @@ export default function FilmesPage() {
                     <div className="col-span-1">
                       <div className="flex items-center text-sm">
                         <Clock className="mr-1 h-3 w-3" />
-                        {filme.duracao}min
+                        {formatters.duration(filme.duracao)}
                       </div>
                     </div>
 
                     <div className="col-span-2">
                       <div className="flex gap-2">
-                        <Badge
-                          variant="secondary"
-                          className={`${getClassificacaoColor(
-                            filme.classificacao
-                          )} cursor-pointer`}
-                        >
-                          {filme.classificacao}
-                        </Badge>
-                        <Badge
-                          variant="secondary"
-                          className={`${
-                            filme.ativo
-                              ? "bg-green-600 text-white hover:bg-green-500 transition-colors duration-200"
-                              : "bg-gray-600 text-white hover:bg-gray-500 transition-colors duration-200"
-                          } cursor-pointer`}
-                        >
-                          {filme.ativo ? "Ativo" : "Inativo"}
-                        </Badge>
+                        <StatusBadge
+                          status={
+                            filme.classificacao as
+                              | "LIVRE"
+                              | "10"
+                              | "12"
+                              | "14"
+                              | "16"
+                              | "18"
+                          }
+                        />
+                        <StatusBadge
+                          status={filme.ativo ? "active" : "inactive"}
+                        />
                       </div>
                     </div>
 
                     <div className="col-span-2">
                       <span className="text-sm text-muted-foreground">
-                        {new Date(filme.createdAt).toLocaleDateString("pt-BR")}
+                        {formatters.date(filme.createdAt)}
                       </span>
                     </div>
 

@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
+import { FloatingChat } from "@/components/ai-agent/floating-chat";
 
 interface FilmeComSessoes {
   id: string;
@@ -384,6 +385,9 @@ export default function HomePage() {
           </p>
         </div>
       </footer>
+
+      {/* Chat Flutuante */}
+      <FloatingChat />
     </div>
   );
 }

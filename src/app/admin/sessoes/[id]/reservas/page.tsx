@@ -24,7 +24,7 @@ import { toast } from "sonner";
 
 interface SessaoComFilme {
   id: string;
-  dataHora: string;
+  dataHora: Date;
   sala: string;
   linhas: number;
   colunas: number;
