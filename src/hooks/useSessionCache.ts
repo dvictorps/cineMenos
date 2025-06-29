@@ -1,49 +1,46 @@
 'use client'
 
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { listarSessoes, buscarSessaoPorId } from '@/actions/sessoes'
+import { listarSessoes } from '@/actions'
 
-// Chaves de query para sessões
-export const sessionKeys = {
-  all: ['sessions'] as const,
-  lists: () => [...sessionKeys.all, 'list'] as const,
-  active: () => [...sessionKeys.lists(), 'active'] as const,
-  details: () => [...sessionKeys.all, 'detail'] as const,
-  detail: (id: string) => [...sessionKeys.details(), id] as const,
-}
+const CACHE_KEYS = {
+  sessions: 'sessions',
+  activeSessions: 'active-sessions',
+  sessionDetails: (id: string) => ['session', id],
+} as const
 
 // Hook para listar sessões (cache médio - reservas podem mudar)
 export function useActiveSessions() {
   return useQuery({
-    queryKey: sessionKeys.active(),
+    queryKey: [CACHE_KEYS.activeSessions],
     queryFn: async () => {
       const result = await listarSessoes()
-      if (!result.success) {
-        throw new Error(result.error)
+      if (result.success && result.data) {
+        return result.data.filter(sessao => sessao.ativo)
       }
-      return result.data
+      throw new Error(result.error || 'Erro ao carregar sessões ativas')
     },
-    staleTime: 1000 * 60 * 5,  // 5 minutos - reservas podem mudar
-    gcTime: 1000 * 60 * 15,    // 15 minutos em cache
-    refetchOnWindowFocus: true, // Atualizar quando usuário volta
+    staleTime: 5 * 60 * 1000, // 5 minutos
+    gcTime: 15 * 60 * 1000, // 15 minutos
   })
 }
 
 // Hook para detalhes de sessão (cache curto - ocupação muda)
 export function useSessionDetails(id: string) {
   return useQuery({
-    queryKey: sessionKeys.detail(id),
+    queryKey: CACHE_KEYS.sessionDetails(id),
     queryFn: async () => {
-      const result = await buscarSessaoPorId(id)
-      if (!result.success) {
-        throw new Error(result.error)
+      const result = await listarSessoes()
+      if (result.success && result.data) {
+        const session = result.data.find(sessao => sessao.id === id)
+        if (!session) throw new Error('Sessão não encontrada')
+        return session
       }
-      return result.data
+      throw new Error(result.error || 'Erro ao carregar sessão')
     },
-    staleTime: 1000 * 60 * 2,  // 2 minutos - ocupação muda rapidamente
-    gcTime: 1000 * 60 * 10,
+    staleTime: 2 * 60 * 1000, // 2 minutos
+    gcTime: 10 * 60 * 1000, // 10 minutos
     enabled: !!id,
-    refetchOnWindowFocus: true,
   })
 }
 
@@ -52,8 +49,27 @@ export function useInvalidateSessions() {
   const queryClient = useQueryClient()
   
   return {
-    invalidateAll: () => queryClient.invalidateQueries({ queryKey: sessionKeys.all }),
-    invalidateActive: () => queryClient.invalidateQueries({ queryKey: sessionKeys.active() }),
-    invalidateDetail: (id: string) => queryClient.invalidateQueries({ queryKey: sessionKeys.detail(id) }),
+    invalidateSessions: () => {
+      queryClient.invalidateQueries({ queryKey: [CACHE_KEYS.sessions] })
+      queryClient.invalidateQueries({ queryKey: [CACHE_KEYS.activeSessions] })
+    },
+    invalidateSessionDetails: (id: string) => {
+      queryClient.invalidateQueries({ queryKey: CACHE_KEYS.sessionDetails(id) })
+    },
   }
+}
+
+export function useSessionCache() {
+  return useQuery({
+    queryKey: [CACHE_KEYS.sessions],
+    queryFn: async () => {
+      const result = await listarSessoes()
+      if (result.success && result.data) {
+        return result.data
+      }
+      throw new Error(result.error || 'Erro ao carregar sessões')
+    },
+    staleTime: 5 * 60 * 1000, // 5 minutos
+    gcTime: 15 * 60 * 1000, // 15 minutos
+  })
 } 

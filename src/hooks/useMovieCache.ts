@@ -1,47 +1,45 @@
 'use client'
 
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { listarFilmesAtivos, buscarDetalhesFilme } from '@/actions/filmes'
+import { listarFilmes } from '@/actions'
 
-// Chaves de query organizadas
-export const movieKeys = {
-  all: ['movies'] as const,
-  lists: () => [...movieKeys.all, 'list'] as const,
-  active: () => [...movieKeys.lists(), 'active'] as const,
-  details: () => [...movieKeys.all, 'detail'] as const,
-  detail: (id: string) => [...movieKeys.details(), id] as const,
-}
+const CACHE_KEYS = {
+  movies: 'movies',
+  activeMovies: 'active-movies',
+  movieDetails: (id: string) => ['movie', id],
+} as const
 
 // Hook para filmes ativos (cache longo - dados mudam pouco)
 export function useActiveMovies() {
   return useQuery({
-    queryKey: movieKeys.active(),
+    queryKey: [CACHE_KEYS.activeMovies],
     queryFn: async () => {
-      const result = await listarFilmesAtivos()
-      if (!result.success) {
-        throw new Error(result.error)
+      const result = await listarFilmes()
+      if (result.success && result.data) {
+        return result.data.filter(filme => filme.ativo)
       }
-      return result.data
+      throw new Error(result.error || 'Erro ao carregar filmes ativos')
     },
-    staleTime: 1000 * 60 * 15, // 15 minutos - filmes não mudam frequentemente
-    gcTime: 1000 * 60 * 30,    // 30 minutos em cache
-    refetchOnWindowFocus: false,
+    staleTime: 15 * 60 * 1000, // 15 minutos
+    gcTime: 30 * 60 * 1000, // 30 minutos
   })
 }
 
 // Hook para detalhes de filme específico
 export function useMovieDetails(id: string) {
   return useQuery({
-    queryKey: movieKeys.detail(id),
+    queryKey: CACHE_KEYS.movieDetails(id),
     queryFn: async () => {
-      const result = await buscarDetalhesFilme(id)
-      if (!result.success) {
-        throw new Error(result.error)
+      const result = await listarFilmes()
+      if (result.success && result.data) {
+        const movie = result.data.find(filme => filme.id === id)
+        if (!movie) throw new Error('Filme não encontrado')
+        return movie
       }
-      return result.data
+      throw new Error(result.error || 'Erro ao carregar filme')
     },
-    staleTime: 1000 * 60 * 10, // 10 minutos
-    gcTime: 1000 * 60 * 20,
+    staleTime: 10 * 60 * 1000, // 10 minutos
+    gcTime: 20 * 60 * 1000, // 20 minutos
     enabled: !!id,
   })
 }
@@ -51,8 +49,27 @@ export function useInvalidateMovies() {
   const queryClient = useQueryClient()
   
   return {
-    invalidateAll: () => queryClient.invalidateQueries({ queryKey: movieKeys.all }),
-    invalidateActive: () => queryClient.invalidateQueries({ queryKey: movieKeys.active() }),
-    invalidateDetail: (id: string) => queryClient.invalidateQueries({ queryKey: movieKeys.detail(id) }),
+    invalidateMovies: () => {
+      queryClient.invalidateQueries({ queryKey: [CACHE_KEYS.movies] })
+      queryClient.invalidateQueries({ queryKey: [CACHE_KEYS.activeMovies] })
+    },
+    invalidateMovieDetails: (id: string) => {
+      queryClient.invalidateQueries({ queryKey: CACHE_KEYS.movieDetails(id) })
+    },
   }
+}
+
+export function useMovieCache() {
+  return useQuery({
+    queryKey: [CACHE_KEYS.movies],
+    queryFn: async () => {
+      const result = await listarFilmes()
+      if (result.success && result.data) {
+        return result.data
+      }
+      throw new Error(result.error || 'Erro ao carregar filmes')
+    },
+    staleTime: 15 * 60 * 1000, // 15 minutos
+    gcTime: 30 * 60 * 1000, // 30 minutos
+  })
 } 

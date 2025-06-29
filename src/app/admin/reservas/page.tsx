@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,6 +14,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { listarReservas, cancelarReserva } from "@/actions/reservas";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Search,
   Calendar,
@@ -27,50 +28,27 @@ import {
   CheckCircle,
   Loader2,
 } from "lucide-react";
-import { toast } from "sonner";
-
-interface Reserva {
-  id: string;
-  nomeCliente: string | null;
-  emailCliente: string | null;
-  assentos: string;
-  quantidade: number;
-  tipo: string;
-  dataReserva: Date;
-  sessao: {
-    dataHora: Date;
-    sala: string;
-    preco: number;
-    filme: {
-      titulo: string;
-    };
-  };
-}
 
 export default function ReservasPage() {
-  const [reservas, setReservas] = useState<Reserva[]>([]);
-  const [loading, setLoading] = useState(true);
   const [filtro, setFiltro] = useState("");
+  const queryClient = useQueryClient();
 
-  useEffect(() => {
-    const carregarReservas = async () => {
-      try {
-        const result = await listarReservas();
-        if (result.success && result.data) {
-          setReservas(result.data);
-        } else {
-          toast.error("Erro ao carregar reservas");
-        }
-      } catch (error) {
-        console.error("Erro ao carregar reservas:", error);
-        toast.error("Erro ao carregar reservas");
-      } finally {
-        setLoading(false);
+  const {
+    data: reservas = [],
+    isLoading: loading,
+    error,
+  } = useQuery({
+    queryKey: ["reservas"],
+    queryFn: async () => {
+      const result = await listarReservas();
+      if (result.success && result.data) {
+        return result.data;
       }
-    };
-
-    carregarReservas();
-  }, []);
+      throw new Error(result.error || "Erro ao carregar reservas");
+    },
+    staleTime: 2 * 60 * 1000, // 2 minutos
+    gcTime: 5 * 60 * 1000, // 5 minutos
+  });
 
   const formatarData = (data: Date) => {
     return new Date(data).toLocaleDateString("pt-BR", {
@@ -112,6 +90,23 @@ export default function ReservasPage() {
         <div className="text-center">
           <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
           <p className="text-muted-foreground">Carregando reservas...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex-1 flex items-center justify-center p-6">
+        <div className="text-center">
+          <p className="text-red-500 mb-4">Erro ao carregar reservas</p>
+          <Button
+            onClick={() =>
+              queryClient.invalidateQueries({ queryKey: ["reservas"] })
+            }
+          >
+            Tentar novamente
+          </Button>
         </div>
       </div>
     );
@@ -296,13 +291,9 @@ export default function ReservasPage() {
                             <CancelButton
                               reservaId={reserva.id}
                               onCancel={() => {
-                                setReservas((prev) =>
-                                  prev.map((r) =>
-                                    r.id === reserva.id
-                                      ? { ...r, tipo: "cancelamento" }
-                                      : r
-                                  )
-                                );
+                                queryClient.invalidateQueries({
+                                  queryKey: ["reservas"],
+                                });
                               }}
                             />
                           )}
@@ -402,13 +393,9 @@ export default function ReservasPage() {
                               <CancelButton
                                 reservaId={reserva.id}
                                 onCancel={() => {
-                                  setReservas((prev) =>
-                                    prev.map((r) =>
-                                      r.id === reserva.id
-                                        ? { ...r, tipo: "cancelamento" }
-                                        : r
-                                    )
-                                  );
+                                  queryClient.invalidateQueries({
+                                    queryKey: ["reservas"],
+                                  });
                                 }}
                               />
                             </div>
@@ -444,14 +431,14 @@ function CancelButton({ reservaId, onCancel }: CancelButtonProps) {
     try {
       const result = await cancelarReserva(reservaId);
       if (result.success) {
-        toast.success("Reserva cancelada com sucesso!");
+        console.log("Reserva cancelada com sucesso!");
         onCancel();
       } else {
-        toast.error(result.error || "Erro ao cancelar reserva");
+        console.error(result.error || "Erro ao cancelar reserva");
       }
     } catch (error) {
       console.error("Erro ao cancelar reserva:", error);
-      toast.error("Erro ao cancelar reserva");
+      console.error("Erro ao cancelar reserva");
     } finally {
       setLoading(false);
     }
