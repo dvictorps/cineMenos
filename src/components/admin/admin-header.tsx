@@ -2,7 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Plus, ArrowLeft } from "lucide-react";
+import { Plus, ArrowLeft, ExternalLink } from "lucide-react";
 import Link from "next/link";
 import { useMemo, useCallback } from "react";
 
@@ -28,6 +28,10 @@ const pageConfig = {
       href: "/admin/sessoes/nova",
       icon: Plus,
     },
+  },
+  "/admin/reservas": {
+    title: "Gerenciar Reservas",
+    subtitle: "Visualize e gerencie todas as reservas",
   },
   "/admin/relatorios": {
     title: "Relatórios",
@@ -82,14 +86,26 @@ export function AdminHeader() {
   if (!currentPage) {
     return (
       <header className="bg-card border-b border-border px-6 py-4">
-        <div className="flex items-center">
-          <Link href="/admin">
-            <Button variant="ghost" size="sm" className="mr-4 btn-voltar">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              <span>Voltar</span>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center">
+            <Link href="/admin">
+              <Button variant="ghost" size="sm" className="mr-4 btn-voltar">
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                <span>Voltar</span>
+              </Button>
+            </Link>
+            <h1 className="text-2xl font-semibold text-foreground">Admin</h1>
+          </div>
+          <Link href="/">
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex items-center gap-2"
+            >
+              <ExternalLink className="h-4 w-4" />
+              <span>Ver Site</span>
             </Button>
           </Link>
-          <h1 className="text-2xl font-semibold text-foreground">Admin</h1>
         </div>
       </header>
     );
@@ -133,6 +149,17 @@ export function AdminHeader() {
               </Button>
             </Link>
           )}
+
+          <Link href="/">
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex items-center gap-2"
+            >
+              <ExternalLink className="h-4 w-4" />
+              <span className="hidden sm:inline">Ver Site</span>
+            </Button>
+          </Link>
         </div>
       </div>
     </header>

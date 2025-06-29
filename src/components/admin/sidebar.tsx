@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
-import { Film, Calendar, Home, Menu, X } from "lucide-react";
+import { Film, Calendar, Home, Menu, X, Ticket } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
 
@@ -23,6 +23,11 @@ const navigation = [
     name: "Sessões",
     href: "/admin/sessoes",
     icon: Calendar,
+  },
+  {
+    name: "Reservas",
+    href: "/admin/reservas",
+    icon: Ticket,
   },
 ];
 

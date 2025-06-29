@@ -249,14 +249,21 @@ export default function HomePage() {
       <section className="container mx-auto px-4 pb-12">
         <div className="mb-6">
           <h3 className="text-2xl font-bold text-white mb-2">
-            Em Cartaz ({filmesFiltrados.length} filmes)
+            Em Cartaz ({loading ? "..." : filmesFiltrados.length} filmes)
           </h3>
           <p className="text-muted-foreground">
             Confira nossa programação e reserve seu lugar
           </p>
         </div>
 
-        {filmesFiltrados.length === 0 ? (
+        {loading ? (
+          <div className="flex items-center justify-center py-20">
+            <div className="text-center">
+              <Loader2 className="h-12 w-12 animate-spin mx-auto mb-4 text-white" />
+              <p className="text-muted-foreground">Carregando filmes...</p>
+            </div>
+          </div>
+        ) : filmesFiltrados.length === 0 ? (
           <Card>
             <CardContent className="py-12 text-center">
               <Film className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
