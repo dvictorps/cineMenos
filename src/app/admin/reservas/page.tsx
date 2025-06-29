@@ -88,7 +88,7 @@ export default function ReservasPage() {
     return (
       <div className="flex-1 flex items-center justify-center p-6">
         <div className="text-center">
-          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-white" />
           <p className="text-muted-foreground">Carregando reservas...</p>
         </div>
       </div>

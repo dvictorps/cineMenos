@@ -76,7 +76,9 @@ export default function FilmesPage() {
   };
 
   if (loading) {
-    return <Loading fullScreen text="Carregando filmes..." />;
+    return (
+      <Loading fullScreen text="Carregando filmes..." className="text-white" />
+    );
   }
 
   if (error) {
