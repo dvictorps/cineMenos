@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,7 +12,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { listarFilmes } from "@/actions";
+import { listarFilmes, desativarFilme, ativarFilme } from "@/actions";
+import { useAsyncData } from "@/hooks/useAsyncData";
+import { useTextFilter } from "@/hooks/useFilters";
+import { useLoadingState } from "@/hooks/useLoadingState";
+import { Loading } from "@/components/ui/loading";
+import { StatusBadge } from "@/components/ui/status-badge";
+import { formatters } from "@/lib/formatters";
 import {
   Plus,
   Search,
@@ -21,99 +27,77 @@ import {
   Clock,
   Filter,
   MoreHorizontal,
-  Loader2,
 } from "lucide-react";
 import Link from "next/link";
 
-interface FilmeData {
-  id: string;
-  titulo: string;
-  descricao: string;
-  duracao: number;
-  genero: string;
-  classificacao: string;
-  banner: string | null;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
 export default function FilmesPage() {
-  const [filmes, setFilmes] = useState<FilmeData[]>([]);
-  const [loading, setLoading] = useState(true);
   const [filtroTexto, setFiltroTexto] = useState("");
   const [filtroGenero, setFiltroGenero] = useState("todos");
 
-  useEffect(() => {
-    const carregarFilmes = async () => {
-      try {
-        const result = await listarFilmes();
-        if (result.success && result.data) {
-          setFilmes(result.data);
-        }
-      } catch (error) {
-        console.error("Erro ao carregar filmes:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    carregarFilmes();
+  const listarFilmesCallback = useCallback(() => {
+    return listarFilmes();
   }, []);
 
-  // Lógica de filtros
-  const filmesFiltrados = filmes.filter((filme) => {
-    // Filtro por texto (título)
-    if (filtroTexto) {
-      const filtroLower = filtroTexto.toLowerCase();
-      if (!filme.titulo.toLowerCase().includes(filtroLower)) {
-        return false;
-      }
-    }
+  const {
+    data: filmes,
+    loading,
+    error,
+    refetch,
+  } = useAsyncData(listarFilmesCallback, []);
 
-    // Filtro por gênero
+  const { withLoading } = useLoadingState();
+
+  // Lógica de filtros com hook personalizado
+  const filmesComTextoFiltrado = useTextFilter(filmes || [], filtroTexto, [
+    "titulo",
+  ]);
+
+  const filmesFiltrados = filmesComTextoFiltrado.filter((filme) => {
     if (filtroGenero !== "todos") {
-      if (filme.genero.toLowerCase() !== filtroGenero.toLowerCase()) {
-        return false;
-      }
+      return filme.genero.toLowerCase() === filtroGenero.toLowerCase();
     }
-
     return true;
   });
 
   // Obter gêneros únicos
   const generosUnicos = Array.from(
-    new Set(filmes.map((filme) => filme.genero))
+    new Set((filmes || []).map((filme) => filme.genero))
   );
 
+  const handleToggleAtivo = async (filmeId: string, ativo: boolean) => {
+    const action = ativo ? desativarFilme : ativarFilme;
+
+    await withLoading(
+      async () => {
+        const result = await action(filmeId);
+        if (result.success) {
+          refetch();
+        }
+        return result;
+      },
+      {
+        successMessage: ativo
+          ? "Filme desativado com sucesso!"
+          : "Filme ativado com sucesso!",
+        errorMessage: "Erro ao alterar status do filme",
+      }
+    );
+  };
+
   if (loading) {
+    return <Loading fullScreen text="Carregando filmes..." />;
+  }
+
+  if (error) {
     return (
       <div className="flex-1 flex items-center justify-center p-6">
         <div className="text-center">
-          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-          <p className="text-muted-foreground">Carregando filmes...</p>
+          <p className="text-red-500 mb-4">{error}</p>
+          <Button onClick={refetch}>Tentar novamente</Button>
         </div>
       </div>
     );
   }
-
-  const getClassificacaoColor = (classificacao: string) => {
-    switch (classificacao) {
-      case "LIVRE":
-        return "bg-green-600 text-white";
-      case "10":
-        return "bg-blue-600 text-white";
-      case "12":
-        return "bg-yellow-600 text-white";
-      case "14":
-        return "bg-orange-600 text-white";
-      case "16":
-        return "bg-red-600 text-white";
-      case "18":
-        return "bg-purple-600 text-white";
-      default:
-        return "bg-gray-600 text-white";
-    }
-  };
 
   return (
     <div className="flex-1 space-y-4 p-6">
@@ -218,7 +202,7 @@ export default function FilmesPage() {
               {filmesFiltrados.map((filme) => (
                 <div
                   key={filme.id}
-                  className="grid grid-cols-1 md:grid-cols-12 gap-4 p-4 border rounded-lg hover:bg-muted/50 transition-colors duration-200 group"
+                  className="grid grid-cols-1 md:grid-cols-12 gap-4 p-4 border rounded-lg hover:bg-muted/50 transition-colors duration-200 group cursor-pointer"
                 >
                   {/* Mobile Layout */}
                   <div className="md:hidden space-y-3">
@@ -238,25 +222,37 @@ export default function FilmesPage() {
 
                     <div className="flex flex-wrap gap-2">
                       <Badge variant="outline">{filme.genero}</Badge>
-                      <Badge
-                        variant="secondary"
-                        className={getClassificacaoColor(filme.classificacao)}
-                      >
-                        {filme.classificacao}
-                      </Badge>
+                      <StatusBadge
+                        status={
+                          filme.classificacao as
+                            | "LIVRE"
+                            | "10"
+                            | "12"
+                            | "14"
+                            | "16"
+                            | "18"
+                        }
+                      />
+                      <StatusBadge
+                        status={filme.ativo ? "active" : "inactive"}
+                      />
                       <div className="flex items-center text-sm text-muted-foreground">
                         <Clock className="mr-1 h-3 w-3" />
-                        {filme.duracao}min
+                        {formatters.duration(filme.duracao)}
                       </div>
                     </div>
 
                     <div className="flex items-center justify-between pt-2 border-t">
                       <span className="text-xs text-muted-foreground">
-                        {new Date(filme.createdAt).toLocaleDateString("pt-BR")}
+                        {formatters.date(filme.createdAt)}
                       </span>
                       <div className="flex gap-2">
                         <Link href={`/admin/filmes/${filme.id}/editar`}>
-                          <Button variant="outline" size="sm">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-muted-foreground hover:text-blue-400"
+                          >
                             <Edit className="mr-1 h-3 w-3" />
                             Editar
                           </Button>
@@ -264,10 +260,26 @@ export default function FilmesPage() {
                         <Button
                           variant="outline"
                           size="sm"
-                          className="text-red-600 hover:text-red-700"
+                          onClick={() =>
+                            handleToggleAtivo(filme.id, filme.ativo)
+                          }
+                          className={
+                            filme.ativo
+                              ? "text-red-600 hover:text-red-700"
+                              : "text-green-600 hover:text-green-700"
+                          }
                         >
-                          <Trash2 className="mr-1 h-3 w-3" />
-                          Excluir
+                          {filme.ativo ? (
+                            <>
+                              <Trash2 className="mr-1 h-3 w-3" />
+                              Desativar
+                            </>
+                          ) : (
+                            <>
+                              <Trash2 className="mr-1 h-3 w-3" />
+                              Ativar
+                            </>
+                          )}
                         </Button>
                       </div>
                     </div>
@@ -293,22 +305,32 @@ export default function FilmesPage() {
                     <div className="col-span-1">
                       <div className="flex items-center text-sm">
                         <Clock className="mr-1 h-3 w-3" />
-                        {filme.duracao}min
+                        {formatters.duration(filme.duracao)}
                       </div>
                     </div>
 
                     <div className="col-span-2">
-                      <Badge
-                        variant="secondary"
-                        className={getClassificacaoColor(filme.classificacao)}
-                      >
-                        {filme.classificacao}
-                      </Badge>
+                      <div className="flex gap-2">
+                        <StatusBadge
+                          status={
+                            filme.classificacao as
+                              | "LIVRE"
+                              | "10"
+                              | "12"
+                              | "14"
+                              | "16"
+                              | "18"
+                          }
+                        />
+                        <StatusBadge
+                          status={filme.ativo ? "active" : "inactive"}
+                        />
+                      </div>
                     </div>
 
                     <div className="col-span-2">
                       <span className="text-sm text-muted-foreground">
-                        {new Date(filme.createdAt).toLocaleDateString("pt-BR")}
+                        {formatters.date(filme.createdAt)}
                       </span>
                     </div>
 
@@ -318,7 +340,7 @@ export default function FilmesPage() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-8 w-8 hover:scale-110 transition-transform duration-200"
+                            className="h-8 w-8 text-muted-foreground hover:text-blue-400 hover:scale-110 transition-all duration-200"
                           >
                             <Edit className="h-3 w-3" />
                           </Button>
@@ -326,7 +348,17 @@ export default function FilmesPage() {
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-8 w-8 text-red-600 hover:text-red-700 hover:scale-110 transition-all duration-200"
+                          onClick={() =>
+                            handleToggleAtivo(filme.id, filme.ativo)
+                          }
+                          className={`h-8 w-8 hover:scale-110 transition-all duration-200 ${
+                            filme.ativo
+                              ? "text-red-600 hover:text-red-700"
+                              : "text-green-600 hover:text-green-700"
+                          }`}
+                          title={
+                            filme.ativo ? "Desativar Filme" : "Ativar Filme"
+                          }
                         >
                           <Trash2 className="h-3 w-3" />
                         </Button>

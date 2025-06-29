@@ -95,17 +95,61 @@ export async function atualizarSessao(id: string, data: CreateSessaoData) {
   }
 }
 
-export async function removerSessao(id: string) {
+export async function desativarSessao(id: string) {
   try {
-    await prisma.sessao.delete({
+    const sessao = await prisma.sessao.update({
       where: { id },
+      data: { ativo: false },
     })
 
     revalidatePath('/admin/sessoes')
-    return { success: true }
+    return { success: true, data: sessao }
   } catch (error) {
-    console.error('Erro ao remover sessão:', error)
-    return { success: false, error: 'Erro ao remover sessão' }
+    console.error('Erro ao desativar sessão:', error)
+    return { success: false, error: 'Erro ao desativar sessão' }
+  }
+}
+
+export async function ativarSessao(id: string) {
+  try {
+    const sessao = await prisma.sessao.update({
+      where: { id },
+      data: { ativo: true },
+    })
+
+    revalidatePath('/admin/sessoes')
+    return { success: true, data: sessao }
+  } catch (error) {
+    console.error('Erro ao ativar sessão:', error)
+    return { success: false, error: 'Erro ao ativar sessão' }
+  }
+}
+
+export async function listarSessoesAtivas() {
+  try {
+    const sessoes = await prisma.sessao.findMany({
+      where: {
+        ativo: true,
+        filme: {
+          ativo: true,
+        },
+        dataHora: {
+          gte: new Date(),
+        },
+      },
+      include: {
+        filme: true,
+        reservas: {
+          where: { tipo: 'reserva' },
+        },
+      },
+      orderBy: { dataHora: 'asc' },
+    })
+
+    return { success: true, data: sessoes }
+  } catch (error) {
+    console.error('Erro ao listar sessões ativas:', error)
+    return { success: false, error: 'Erro ao buscar sessões' }
   }
 }
 
@@ -116,6 +160,10 @@ export async function buscarSessoesPorData(data: Date) {
 
     const sessoes = await prisma.sessao.findMany({
       where: {
+        ativo: true,
+        filme: {
+          ativo: true,
+        },
         dataHora: {
           gte: inicioDia,
           lte: fimDia,
@@ -144,6 +192,10 @@ export async function buscarSessoesProximaSemana() {
 
     const sessoes = await prisma.sessao.findMany({
       where: {
+        ativo: true,
+        filme: {
+          ativo: true,
+        },
         dataHora: {
           gte: hoje,
           lte: proximaSemana,

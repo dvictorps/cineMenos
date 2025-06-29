@@ -19,6 +19,7 @@ model Filme {
   genero          String
   classificacao   String    // classificação indicativa
   banner          String?   // URL do banner/pôster do filme
+  ativo           Boolean   @default(true) // controle de ativação/desativação
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
   
@@ -36,6 +37,7 @@ model Sessao {
   linhas          Int       @default(5)  // número de linhas (ex: 5 em 5x10)
   colunas         Int       @default(10) // número de colunas (ex: 10 em 5x10)
   preco           Float     // preço por ingresso
+  ativo           Boolean   @default(true) // controle de ativação/desativação
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
   

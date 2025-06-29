@@ -6,6 +6,7 @@ import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { Film, Calendar, Home, Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import Image from "next/image";
 
 const navigation = [
   {
@@ -61,21 +62,20 @@ export function Sidebar() {
           boxShadow: isOpen ? "inset -2px 0 4px rgba(0, 0, 0, 0.1)" : undefined,
         }}
       >
-        <div className="p-6 flex-shrink-0 border-b border-border/30">
-          <div className="flex items-center space-x-2 cursor-pointer group">
-            <div className="w-6 h-6 bg-primary rounded-md flex items-center justify-center shadow-sm transition-all duration-200 group-hover:shadow-md group-hover:scale-110">
-              <span className="text-primary-foreground font-bold text-xs">
-                C
-              </span>
+        <div className="p-4 flex-shrink-0 border-b border-border/30">
+          <div className="flex justify-center cursor-pointer group">
+            <div className="w-32 h-20 rounded-lg overflow-hidden shadow-sm transition-all duration-200 group-hover:shadow-md group-hover:scale-105">
+              <Image
+                src="/images/logo.png"
+                alt="CineMenos"
+                width={128}
+                height={80}
+                className="w-full h-full object-contain"
+              />
             </div>
-            <div>
-              <h1 className="text-lg font-semibold text-foreground transition-colors group-hover:text-primary">
-                CineMenos
-              </h1>
-              <p className="text-xs text-muted-foreground transition-colors group-hover:text-muted-foreground/80">
-                Admin Panel
-              </p>
-            </div>
+          </div>
+          <div className="text-center mt-2">
+            <p className="text-xs text-muted-foreground">Admin Panel</p>
           </div>
         </div>
 
@@ -100,7 +100,7 @@ export function Sidebar() {
                       "flex items-center px-3 py-2 text-sm font-medium rounded-md transition-all duration-200 cursor-pointer group relative overflow-hidden border-l-2",
                       isActive
                         ? "bg-secondary text-secondary-foreground shadow-sm border-primary"
-                        : "text-muted-foreground hover:bg-accent hover:text-accent-foreground hover:shadow-sm hover:scale-[1.02] hover:translate-x-1 border-transparent hover:border-accent-foreground/20"
+                        : "text-muted-foreground hover:bg-accent hover:text-blue-400 hover:shadow-sm hover:scale-[1.02] hover:translate-x-1 border-transparent hover:border-accent-foreground/20"
                     )}
                   >
                     <item.icon
@@ -108,7 +108,7 @@ export function Sidebar() {
                         "mr-3 h-5 w-5 flex-shrink-0 transition-all duration-200",
                         isActive
                           ? "text-white"
-                          : "text-muted-foreground group-hover:text-accent-foreground group-hover:scale-110"
+                          : "text-muted-foreground group-hover:text-blue-400 group-hover:scale-110"
                       )}
                     />
                     {item.name}

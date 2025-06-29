@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { MovieForm, type MovieFormData } from "@/components/forms/movie-form";
 import { criarFilme } from "@/actions";
+import { toast } from "sonner";
 
 export default function NovoFilmePage() {
   const router = useRouter();
@@ -32,12 +33,13 @@ export default function NovoFilmePage() {
       });
 
       if (result.success) {
+        toast.success("Filme cadastrado com sucesso!");
         router.push("/admin/filmes");
       } else {
-        alert("Erro ao cadastrar filme: " + result.error);
+        toast.error("Erro ao cadastrar filme: " + result.error);
       }
     } catch {
-      alert("Erro ao cadastrar filme");
+      toast.error("Erro ao cadastrar filme");
     } finally {
       setLoading(false);
     }
