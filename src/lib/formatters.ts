@@ -1,19 +1,29 @@
+// Cache formatters para melhor performance
+const dateFormatter = new Intl.DateTimeFormat('pt-BR', {
+  day: '2-digit',
+  month: '2-digit',
+  year: 'numeric'
+});
+
+const timeFormatter = new Intl.DateTimeFormat('pt-BR', {
+  hour: '2-digit',
+  minute: '2-digit'
+});
+
+const currencyFormatter = new Intl.NumberFormat('pt-BR', {
+  style: 'currency',
+  currency: 'BRL'
+});
+
 export const formatters = {
   date: (date: Date | string) => {
     const dateObj = typeof date === 'string' ? new Date(date) : date;
-    return dateObj.toLocaleDateString('pt-BR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric'
-    });
+    return dateFormatter.format(dateObj);
   },
   
   time: (date: Date | string) => {
     const dateObj = typeof date === 'string' ? new Date(date) : date;
-    return dateObj.toLocaleTimeString('pt-BR', {
-      hour: '2-digit',
-      minute: '2-digit'
-    });
+    return timeFormatter.format(dateObj);
   },
   
   dateTime: (date: Date | string) => {
@@ -21,14 +31,14 @@ export const formatters = {
     return `${formatters.date(dateObj)} às ${formatters.time(dateObj)}`;
   },
   
-  currency: (value: number) => value.toLocaleString('pt-BR', {
-    style: 'currency',
-    currency: 'BRL'
-  }),
+  currency: (value: number) => currencyFormatter.format(value),
   
   duration: (minutes: number) => {
     const hours = Math.floor(minutes / 60);
     const mins = minutes % 60;
+    
+    if (hours === 0) return `${mins}min`;
+    if (mins === 0) return `${hours}h`;
     return `${hours}h ${mins}min`;
   },
   
@@ -41,7 +51,7 @@ export const formatters = {
     }
   },
 
-  percentage: (value: number) => `${Math.round(value)}%`,
+  percentage: (value: number, decimals: number = 0) => `${value.toFixed(decimals)}%`,
 
   compactNumber: (value: number) => {
     if (value >= 1000000) {
@@ -51,6 +61,18 @@ export const formatters = {
       return `${(value / 1000).toFixed(1)}K`;
     }
     return value.toString();
+  },
+
+  truncate: (text: string, maxLength: number = 50) => {
+    if (text.length <= maxLength) return text;
+    return text.substring(0, maxLength).trim() + '...';
+  },
+
+  relativeDays: (date: Date | string) => {
+    const dateObj = typeof date === 'string' ? new Date(date) : date;
+    if (dateHelpers.isToday(dateObj)) return 'Hoje';
+    if (dateHelpers.isTomorrow(dateObj)) return 'Amanhã';
+    return formatters.date(dateObj);
   }
 };
 

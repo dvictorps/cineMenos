@@ -14,6 +14,9 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 
+// Forçar renderização dinâmica para evitar consultas ao banco durante build
+export const dynamic = "force-dynamic";
+
 export default async function AdminDashboard() {
   const [estatisticas, sessoesMaisProcuradas] = await Promise.all([
     obterEstatisticasGerais(),

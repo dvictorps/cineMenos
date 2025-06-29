@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -34,12 +34,16 @@ export default function FilmesPage() {
   const [filtroTexto, setFiltroTexto] = useState("");
   const [filtroGenero, setFiltroGenero] = useState("todos");
 
+  const listarFilmesCallback = useCallback(() => {
+    return listarFilmes();
+  }, []);
+
   const {
     data: filmes,
     loading,
     error,
     refetch,
-  } = useAsyncData(() => listarFilmes(), []);
+  } = useAsyncData(listarFilmesCallback, []);
 
   const { withLoading } = useLoadingState();
 

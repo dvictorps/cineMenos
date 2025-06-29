@@ -4,6 +4,7 @@ import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Plus, ArrowLeft } from "lucide-react";
 import Link from "next/link";
+import { useMemo, useCallback } from "react";
 
 const pageConfig = {
   "/admin": {
@@ -37,18 +38,22 @@ const pageConfig = {
 export function AdminHeader() {
   const pathname = usePathname();
 
-  const currentPage = Object.entries(pageConfig).find(([path]) => {
-    if (path === "/admin") {
-      return pathname === path;
-    }
-    return pathname?.startsWith(path);
-  })?.[1];
+  const currentPage = useMemo(() => {
+    return Object.entries(pageConfig).find(([path]) => {
+      if (path === "/admin") {
+        return pathname === path;
+      }
+      return pathname?.startsWith(path);
+    })?.[1];
+  }, [pathname]);
 
   // Detectar se é uma página de edição, criação, ou subpágina
-  const isSubPage = pathname && pathname.split("/").length > 3;
+  const isSubPage = useMemo(() => {
+    return pathname && pathname.split("/").length > 3;
+  }, [pathname]);
 
   // Definir URL de voltar baseada na estrutura da rota
-  const getBackUrl = () => {
+  const getBackUrl = useCallback(() => {
     if (!pathname) return "/admin";
 
     // Para páginas de edição/criação, voltar para a listagem
@@ -72,7 +77,7 @@ export function AdminHeader() {
     }
 
     return "/admin";
-  };
+  }, [pathname]);
 
   if (!currentPage) {
     return (

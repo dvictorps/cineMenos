@@ -20,23 +20,50 @@ interface AgentResponse {
   };
 }
 
-// Função para buscar dados do cinema quando necessário
+
+
+// Função para buscar dados resumidos do cinema quando necessário
 async function getCinemaData(query: string) {
   const queryLower = query.toLowerCase();
   const data: Record<string, unknown> = {};
 
-  // Determinar quais dados buscar baseado na query
+  // Determinar quais dados buscar baseado na query - APENAS dados essenciais
   if (queryLower.includes('filme') || queryLower.includes('catálogo') || queryLower.includes('cartaz')) {
     const filmesResult = await listarFilmes();
-    if (filmesResult.success) {
-      data.filmes = filmesResult.data?.filter(f => f.ativo) || [];
+    if (filmesResult.success && filmesResult.data) {
+      // Enviar apenas dados resumidos dos filmes (máximo 5)
+      data.filmes = filmesResult.data
+        .filter(f => f.ativo)
+        .slice(0, 5)
+        .map(f => ({
+          id: f.id,
+          titulo: f.titulo,
+          genero: f.genero,
+          duracao: f.duracao,
+          classificacao: f.classificacao,
+          sessoes: f.sessoes?.length || 0
+        }));
     }
   }
 
   if (queryLower.includes('sessão') || queryLower.includes('sessões') || queryLower.includes('horário') || queryLower.includes('programação')) {
     const sessoesResult = await listarSessoes();
-    if (sessoesResult.success) {
-      data.sessoes = sessoesResult.data?.filter(s => s.ativo) || [];
+    if (sessoesResult.success && sessoesResult.data) {
+      // Enviar apenas sessões das próximas 24h (máximo 10)
+      const agora = new Date();
+      const amanha = new Date(agora.getTime() + 24 * 60 * 60 * 1000);
+      
+      data.sessoes = sessoesResult.data
+        .filter(s => s.ativo && new Date(s.dataHora) >= agora && new Date(s.dataHora) <= amanha)
+        .slice(0, 10)
+        .map(s => ({
+          id: s.id,
+          filmeId: s.filmeId,
+          filmeNome: s.filme?.titulo || 'N/A',
+          dataHora: s.dataHora,
+          sala: s.sala,
+          preco: s.preco
+        }));
     }
   }
 
@@ -47,10 +74,19 @@ async function getCinemaData(query: string) {
     }
   }
 
-  if (queryLower.includes('populares') || queryLower.includes('procuradas') || queryLower.includes('vendendo') || queryLower.includes('melhores')) {
-    const popularesResult = await obterSessoesMaisProcuradas(5);
-    if (popularesResult.success) {
-      data.sessoesMaisPopulares = popularesResult.data;
+  if (queryLower.includes('populares') || queryLower.includes('procuradas') || queryLower.includes('vendendo') || queryLower.includes('melhores') || queryLower.includes('sucesso') || queryLower.includes('favorito')) {
+    const popularesResult = await obterSessoesMaisProcuradas(3);
+    if (popularesResult.success && popularesResult.data) {
+                    // Remover qualquer informação financeira dos dados de popularidade
+       data.sessoesMaisPopulares = popularesResult.data.map((sessao) => ({
+         filmeNome: sessao.filme?.titulo || 'N/A',
+         totalReservas: sessao.totalReservas || 0,
+         dataHora: sessao.dataHora,
+         sala: sessao.sala,
+         genero: sessao.filme?.genero,
+         classificacao: sessao.filme?.classificacao,
+         // Removemos propositalmente: preco, receita, valores monetários
+       }));
     }
   }
 
@@ -58,35 +94,39 @@ async function getCinemaData(query: string) {
 }
 
 // System prompt para o assistente
-const SYSTEM_PROMPT = `Você é o CineMenos AI Assistant, um assistente inteligente especializado em gestão de cinema.
+const SYSTEM_PROMPT = `Você é o CineMenos AI, um assistente virtual amigável especializado em cinema e entretenimento.
 
 PERSONALIDADE:
-- Seja profissional, prestativo e amigável
-- Use linguagem clara e acessível em português brasileiro
-- Seja proativo em oferecer informações relevantes
-- Mantenha o foco no contexto de cinema e entretenimento
+- Seja conversacional, caloroso e genuinamente interessado em ajudar
+- Fale como um amigo que entende muito de cinema
+- Use uma linguagem natural e descontraída (mas profissional)
+- Seja entusiasta sobre filmes e mostre conhecimento sobre cinema
+- Faça perguntas de volta quando apropriado para entender melhor o que a pessoa quer
 
-CAPACIDADES:
-- Consultar informações sobre filmes em cartaz
-- Verificar programação de sessões
-- Analisar estatísticas do cinema
-- Identificar sessões mais populares
-- Fornecer insights sobre desempenho
+COMO RESPONDER:
+- Converse naturalmente, como se fosse uma pessoa real
+- Use expressões brasileiras autênticas ("Nossa!", "Que legal!", "Show!")
+- Conte curiosidades interessantes sobre os filmes quando relevante
+- Faça recomendações baseadas no gosto da pessoa
+- Se não souber algo específico, seja honesto mas ofereça alternativas
 
-FORMATO DE RESPOSTA:
-- Use formatação em markdown quando apropriado
-- Organize informações de forma clara e estruturada
-- Use emojis moderadamente para melhor UX
-- Seja conciso mas completo nas respostas
+SOBRE POPULARIDADE:
+- NUNCA mencione valores em dinheiro, receita ou aspectos financeiros
+- Foque apenas em: número de reservas, procura, interesse do público
+- Use termos como "mais procurado", "favorito do público", "que está fazendo sucesso"
+- Baseie popularidade apenas em dados de frequência e reservas
 
 DADOS DISPONÍVEIS:
-Quando dados do cinema forem fornecidos no contexto, use-os para dar respostas precisas e atualizadas.
+Quando receber dados do cinema, use-os para dar respostas personalizadas e atuais sobre:
+- Filmes em cartaz (título, gênero, duração, classificação)
+- Sessões programadas (horários, salas)
+- Popularidade baseada em número de reservas (NUNCA em dinheiro)
 
-IMPORTANTE:
-- Se não tiver dados específicos, seja honesto sobre limitações
-- Sempre contextualize informações com datas/horários quando relevante
-- Sugira ações úteis quando apropriado
-- Responda sempre em português brasileiro`;
+FORMATO:
+- Responda de forma fluida e natural
+- Use emojis com moderação para dar personalidade
+- Organize informações importantes de forma clara
+- Sempre termine com algo útil ou uma pergunta amigável`;
 
 export async function POST(request: NextRequest) {
   try {
@@ -110,10 +150,53 @@ export async function POST(request: NextRequest) {
     // Buscar dados relevantes do cinema
     const cinemaData = await getCinemaData(body.message);
     
-    // Construir contexto com dados do cinema se disponíveis
+    // Construir contexto compacto com dados do cinema se disponíveis
     let contextMessage = '';
     if (Object.keys(cinemaData).length > 0) {
-      contextMessage = `\n\nDADOS ATUAIS DO CINEMA (use estes dados para responder):\n${JSON.stringify(cinemaData, null, 2)}`;
+      contextMessage = '\n\nDADOS DISPONÍVEIS:';
+      
+      if (cinemaData.filmes) {
+        const filmes = cinemaData.filmes as Array<{
+          titulo: string; genero: string; duracao: number; classificacao: string; sessoes: number;
+        }>;
+        contextMessage += `\nFILMES (${filmes.length}): ${filmes.map(f => 
+          `${f.titulo} (${f.genero}, ${f.duracao}min, ${f.classificacao}, ${f.sessoes} sessões)`
+        ).join('; ')}`;
+      }
+      
+      if (cinemaData.sessoes) {
+        const sessoes = cinemaData.sessoes as Array<{
+          filmeNome: string; dataHora: string; sala: string; preco: number;
+        }>;
+        contextMessage += `\nSESSÕES HOJE/AMANHÃ (${sessoes.length}): ${sessoes.map(s => 
+          `${s.filmeNome} - ${new Date(s.dataHora).toLocaleString('pt-BR')} (Sala ${s.sala}, R$${s.preco})`
+        ).join('; ')}`;
+      }
+      
+      if (cinemaData.estatisticas) {
+        const stats = cinemaData.estatisticas as Record<string, unknown>;
+        contextMessage += `\nESTATÍSTICAS: ${JSON.stringify(stats)}`;
+      }
+      
+             if (cinemaData.sessoesMaisPopulares) {
+         const populares = cinemaData.sessoesMaisPopulares as Array<{
+           filmeNome: string; totalReservas: number; dataHora: Date; sala: string; genero?: string;
+         }>;
+         contextMessage += `\nFILMES MAIS PROCURADOS: ${populares.map(p => 
+           `${p.filmeNome} (${p.totalReservas} reservas, ${p.genero || 'N/A'})`
+         ).join('; ')}`;
+       }
+    }
+
+    // Verificar tamanho da mensagem (estimativa básica)
+    const totalMessage = SYSTEM_PROMPT + body.message + contextMessage;
+    const estimatedTokens = Math.ceil(totalMessage.length / 4); // Aproximação: 4 chars = 1 token
+    
+    if (estimatedTokens > 10000) {
+      return NextResponse.json<AgentResponse>({
+        success: false,
+        response: "📏 **Consulta muito complexa**\n\nSua pergunta requer buscar muitos dados do sistema.\n\n💡 **Tente ser mais específico:**\n- 'Que filmes de ação temos?' em vez de 'Que filmes temos?'\n- 'Próximas sessões de hoje' em vez de 'Todas as sessões'\n- 'Estatísticas de ontem' em vez de 'Todos os dados'"
+      });
     }
 
     // Chamar Groq (modelo Llama 3.3 70B - gratuito e poderoso)
@@ -129,9 +212,9 @@ export async function POST(request: NextRequest) {
           content: body.message + contextMessage
         }
       ],
-      max_tokens: 1500,
+      max_tokens: 800, // Reduzido de 1500 para 800
       temperature: 0.7,
-      top_p: 1,
+      top_p: 0.9, // Reduzido de 1 para 0.9
       stream: false,
     });
 
@@ -160,10 +243,17 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    if (errorObj?.status === 429) {
+    if (errorObj?.status === 413) {
       return NextResponse.json<AgentResponse>({
         success: false,
-        response: "⏳ **Limite temporário atingido**\n\nMuitas requisições em pouco tempo.\n\n💡 **Aguarde alguns segundos e tente novamente.**\n\nO Groq é gratuito mas tem limite de velocidade para uso justo."
+        response: "📏 **Mensagem muito longa**\n\nSua pergunta resultou em uma consulta muito extensa.\n\n💡 **Tente:**\n- Fazer perguntas mais específicas\n- Dividir perguntas complexas em partes menores\n- Focar em informações específicas (ex: 'filmes de ação' em vez de 'todos os filmes')\n\n🔄 **Aguarde alguns segundos e tente novamente com uma pergunta mais simples.**"
+      });
+    }
+
+    if (errorObj?.status === 429 || errorObj?.error?.code === 'rate_limit_exceeded') {
+      return NextResponse.json<AgentResponse>({
+        success: false,
+        response: "⏳ **Limite temporário atingido**\n\nMuitas requisições em pouco tempo ou limite de tokens por minuto excedido.\n\n💡 **Aguarde 1-2 minutos e tente novamente.**\n\nO Groq é gratuito mas tem limite de velocidade para uso justo."
       });
     }
 
