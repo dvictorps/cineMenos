@@ -355,7 +355,7 @@ export default function SessoesPage() {
                       <div className="flex items-center justify-between pt-2 border-t">
                         <div className="w-full bg-muted rounded-full h-2">
                           <div
-                            className="bg-primary h-2 rounded-full transition-all duration-300"
+                            className="bg-white h-2 rounded-full transition-all duration-300"
                             style={{ width: `${ocupacaoPercent}%` }}
                           />
                         </div>
@@ -448,7 +448,7 @@ export default function SessoesPage() {
                           </div>
                           <div className="w-full bg-muted rounded-full h-2">
                             <div
-                              className="bg-primary h-2 rounded-full transition-all duration-300"
+                              className="bg-white h-2 rounded-full transition-all duration-300"
                               style={{ width: `${ocupacaoPercent}%` }}
                             />
                           </div>
