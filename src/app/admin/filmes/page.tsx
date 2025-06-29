@@ -108,7 +108,7 @@ export default function FilmesPage() {
             Filmes
           </h2>
           <p className="text-muted-foreground">
-            Gerencie o catálogo de filmes do cinema
+            Gerencie o catálogo de filmes do cinema:
           </p>
         </div>
         <Link href="/admin/filmes/novo">
