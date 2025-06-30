@@ -66,9 +66,13 @@ export default function FilmesPage() {
     return true;
   });
 
-  // Obter gêneros únicos
+  // Obter gêneros únicos (filtrando valores vazios ou inválidos)
   const generosUnicos = Array.from(
-    new Set((filmes || []).map((filme) => filme.genero))
+    new Set(
+      (filmes || [])
+        .map((filme) => filme.genero)
+        .filter((genero) => genero && genero.trim() !== "")
+    )
   );
 
   const handleToggleFilme = async (filmeId: string, ativo: boolean) => {

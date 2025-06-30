@@ -20,16 +20,39 @@ export default function NovoFilmePage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Validações client-side
+    if (!formData.titulo.trim()) {
+      toast.error("Título é obrigatório");
+      return;
+    }
+    if (!formData.descricao.trim()) {
+      toast.error("Descrição é obrigatória");
+      return;
+    }
+    if (!formData.genero.trim()) {
+      toast.error("Gênero é obrigatório");
+      return;
+    }
+    if (!formData.duracao || parseInt(formData.duracao) <= 0) {
+      toast.error("Duração deve ser maior que zero");
+      return;
+    }
+    if (!formData.classificacao.trim()) {
+      toast.error("Classificação é obrigatória");
+      return;
+    }
+
     setLoading(true);
 
     try {
       const result = await criarFilme({
-        titulo: formData.titulo,
-        descricao: formData.descricao,
+        titulo: formData.titulo.trim(),
+        descricao: formData.descricao.trim(),
         duracao: parseInt(formData.duracao),
-        genero: formData.genero,
+        genero: formData.genero.trim(),
         classificacao: formData.classificacao,
-        banner: formData.banner || undefined,
+        banner: formData.banner?.trim() || undefined,
       });
 
       if (result.success) {

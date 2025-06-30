@@ -60,9 +60,13 @@ export default function HomePage() {
     return true;
   });
 
-  // Obter gêneros únicos
+  // Obter gêneros únicos (filtrando valores vazios ou inválidos)
   const generosUnicos = Array.from(
-    new Set(filmes.map((filme) => filme.genero))
+    new Set(
+      filmes
+        .map((filme) => filme.genero)
+        .filter((genero) => genero && genero.trim() !== "")
+    )
   );
 
   const formatarData = (data: Date) => {
@@ -243,10 +247,12 @@ export default function HomePage() {
               >
                 <div className="relative h-80 bg-muted overflow-hidden rounded-t-lg">
                   {filme.banner ? (
-                    <img
+                    <Image
                       src={filme.banner}
                       alt={filme.titulo}
-                      className="w-full h-full object-cover object-center"
+                      fill
+                      className="object-cover object-center"
+                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 33vw, 20vw"
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">

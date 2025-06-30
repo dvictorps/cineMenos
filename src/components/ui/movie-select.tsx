@@ -40,16 +40,18 @@ export function MovieSelect({
           <SelectValue placeholder={placeholder} />
         </SelectTrigger>
         <SelectContent>
-          {movies.map((movie) => (
-            <SelectItem key={movie.id} value={movie.id}>
-              <div className="flex flex-col">
-                <span className="font-medium">{movie.titulo}</span>
-                <span className="text-xs text-muted-foreground">
-                  {movie.genero} • {movie.duracao}min
-                </span>
-              </div>
-            </SelectItem>
-          ))}
+          {movies
+            .filter((movie) => movie.id && movie.id.trim() !== "")
+            .map((movie) => (
+              <SelectItem key={movie.id} value={movie.id}>
+                <div className="flex flex-col">
+                  <span className="font-medium">{movie.titulo}</span>
+                  <span className="text-xs text-muted-foreground">
+                    {movie.genero} • {movie.duracao}min
+                  </span>
+                </div>
+              </SelectItem>
+            ))}
         </SelectContent>
       </Select>
     </div>

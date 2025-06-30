@@ -34,7 +34,7 @@ interface EditarSessaoPageProps {
 }
 
 export default function EditarSessaoPage({ params }: EditarSessaoPageProps) {
-  const resolvedParams = use(params);
+  const { id } = use(params);
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [carregando, setCarregando] = useState(true);
@@ -72,7 +72,7 @@ export default function EditarSessaoPage({ params }: EditarSessaoPageProps) {
         setCarregandoFilmes(false);
 
         // Carregar dados da sessão
-        const sessaoResult = await buscarSessaoPorId(resolvedParams.id);
+        const sessaoResult = await buscarSessaoPorId(id);
         if (sessaoResult.success && sessaoResult.data) {
           const sessao = sessaoResult.data;
           const dataHora = new Date(sessao.dataHora);
@@ -100,19 +100,58 @@ export default function EditarSessaoPage({ params }: EditarSessaoPageProps) {
     };
 
     carregarDados();
-  }, [resolvedParams.id, router]);
+  }, [id, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Validações client-side
+    if (!formData.filmeId.trim()) {
+      toast.error("Filme é obrigatório");
+      return;
+    }
+    if (!formData.data.trim()) {
+      toast.error("Data é obrigatória");
+      return;
+    }
+    if (!formData.hora.trim()) {
+      toast.error("Hora é obrigatória");
+      return;
+    }
+    if (!formData.sala.trim()) {
+      toast.error("Sala é obrigatória");
+      return;
+    }
+    if (
+      !formData.linhas ||
+      parseInt(formData.linhas) < 3 ||
+      parseInt(formData.linhas) > 15
+    ) {
+      toast.error("Número de linhas deve estar entre 3 e 15");
+      return;
+    }
+    if (
+      !formData.colunas ||
+      parseInt(formData.colunas) < 5 ||
+      parseInt(formData.colunas) > 20
+    ) {
+      toast.error("Número de colunas deve estar entre 5 e 20");
+      return;
+    }
+    if (!formData.preco || parseFloat(formData.preco) <= 0) {
+      toast.error("Preço deve ser maior que zero");
+      return;
+    }
+
+    const dataHora = new Date(`${formData.data}T${formData.hora}`);
+
     setLoading(true);
 
     try {
-      const dataHora = new Date(`${formData.data}T${formData.hora}`);
-
-      const result = await atualizarSessao(resolvedParams.id, {
-        filmeId: formData.filmeId,
+      const result = await atualizarSessao(id, {
+        filmeId: formData.filmeId.trim(),
         dataHora,
-        sala: formData.sala,
+        sala: formData.sala.trim(),
         linhas: parseInt(formData.linhas),
         colunas: parseInt(formData.colunas),
         preco: parseFloat(formData.preco),

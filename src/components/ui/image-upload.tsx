@@ -11,6 +11,7 @@ import {
   Check,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import Image from "next/image";
 
 interface ImageUploadProps {
   value?: string;
@@ -161,10 +162,12 @@ export function ImageUpload({
       >
         {value ? (
           <div className="relative w-full h-full group">
-            <img
+            <Image
               src={value}
-              alt="Preview"
-              className="w-full h-full object-cover"
+              alt="Preview da imagem"
+              fill
+              className="object-cover"
+              sizes="(max-width: 768px) 100vw, 33vw"
             />
             <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center">
               <div className="flex space-x-2">

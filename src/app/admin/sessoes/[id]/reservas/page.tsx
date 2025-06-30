@@ -45,7 +45,7 @@ interface ReservasPageProps {
 }
 
 export default function ReservasPage({ params }: ReservasPageProps) {
-  const resolvedParams = use(params);
+  const { id } = use(params);
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [carregando, setCarregando] = useState(true);
@@ -63,7 +63,7 @@ export default function ReservasPage({ params }: ReservasPageProps) {
     const carregarDados = async () => {
       try {
         // Carregar dados da sessão
-        const sessaoResult = await buscarSessaoPorId(resolvedParams.id);
+        const sessaoResult = await buscarSessaoPorId(id);
         if (sessaoResult.success && sessaoResult.data) {
           setSessao(sessaoResult.data);
         } else {
@@ -73,7 +73,7 @@ export default function ReservasPage({ params }: ReservasPageProps) {
         }
 
         // Carregar assentos ocupados
-        const assentosResult = await obterAssentosOcupados(resolvedParams.id);
+        const assentosResult = await obterAssentosOcupados(id);
         if (assentosResult.success) {
           setAssentosOcupados(assentosResult.data || []);
         }
@@ -87,7 +87,7 @@ export default function ReservasPage({ params }: ReservasPageProps) {
     };
 
     carregarDados();
-  }, [resolvedParams.id, router]);
+  }, [id, router]);
 
   const handleReserva = async () => {
     if (assentosSelecionados.length === 0) {
@@ -104,7 +104,7 @@ export default function ReservasPage({ params }: ReservasPageProps) {
 
     try {
       const result = await criarReserva({
-        sessaoId: resolvedParams.id,
+        sessaoId: id,
         assentos: assentosSelecionados,
         nomeCliente: dadosCliente.nome.trim(),
         emailCliente: dadosCliente.email.trim(),

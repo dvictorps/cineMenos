@@ -8,13 +8,59 @@ import { startOfDay, endOfDay, addDays } from 'date-fns'
 
 export async function criarSessao(data: CreateSessaoData) {
   try {
+    // Validações server-side
+    if (!data.filmeId?.trim()) {
+      return { success: false, error: 'Filme é obrigatório' }
+    }
+    if (!data.dataHora || isNaN(data.dataHora.getTime())) {
+      return { success: false, error: 'Data e hora são obrigatórias' }
+    }
+    if (data.dataHora < new Date()) {
+      return { success: false, error: 'Data deve ser futura' }
+    }
+    if (!data.sala?.trim()) {
+      return { success: false, error: 'Sala é obrigatória' }
+    }
+    if (!data.linhas || data.linhas < 3 || data.linhas > 15) {
+      return { success: false, error: 'Número de linhas deve estar entre 3 e 15' }
+    }
+    if (!data.colunas || data.colunas < 5 || data.colunas > 20) {
+      return { success: false, error: 'Número de colunas deve estar entre 5 e 20' }
+    }
+    if (!data.preco || data.preco <= 0) {
+      return { success: false, error: 'Preço deve ser maior que zero' }
+    }
+
+    // Verificar se o filme existe e está ativo
+    const filme = await prisma.filme.findUnique({
+      where: { id: data.filmeId, ativo: true }
+    })
+    if (!filme) {
+      return { success: false, error: 'Filme não encontrado ou inativo' }
+    }
+
+    // Verificar conflito de horário na mesma sala
+    const conflito = await prisma.sessao.findFirst({
+      where: {
+        sala: data.sala.trim(),
+        ativo: true,
+        dataHora: {
+          gte: new Date(data.dataHora.getTime() - 4 * 60 * 60 * 1000), // 4 horas antes
+          lte: new Date(data.dataHora.getTime() + 4 * 60 * 60 * 1000), // 4 horas depois
+        },
+      }
+    })
+    if (conflito) {
+      return { success: false, error: 'Conflito de horário na mesma sala' }
+    }
+
     const sessao = await prisma.sessao.create({
       data: {
-        filmeId: data.filmeId,
+        filmeId: data.filmeId.trim(),
         dataHora: data.dataHora,
-        sala: data.sala,
-        linhas: data.linhas || 5,
-        colunas: data.colunas || 10,
+        sala: data.sala.trim(),
+        linhas: data.linhas,
+        colunas: data.colunas,
         preco: data.preco,
       },
       include: {
@@ -103,14 +149,42 @@ export async function buscarSessaoAtivaPublica(id: string) {
 
 export async function atualizarSessao(id: string, data: CreateSessaoData) {
   try {
+    // Validações server-side
+    if (!data.filmeId?.trim()) {
+      return { success: false, error: 'Filme é obrigatório' }
+    }
+    if (!data.dataHora || isNaN(data.dataHora.getTime())) {
+      return { success: false, error: 'Data e hora são obrigatórias' }
+    }
+    if (!data.sala?.trim()) {
+      return { success: false, error: 'Sala é obrigatória' }
+    }
+    if (!data.linhas || data.linhas < 3 || data.linhas > 15) {
+      return { success: false, error: 'Número de linhas deve estar entre 3 e 15' }
+    }
+    if (!data.colunas || data.colunas < 5 || data.colunas > 20) {
+      return { success: false, error: 'Número de colunas deve estar entre 5 e 20' }
+    }
+    if (!data.preco || data.preco <= 0) {
+      return { success: false, error: 'Preço deve ser maior que zero' }
+    }
+
+    // Verificar se o filme existe e está ativo
+    const filme = await prisma.filme.findUnique({
+      where: { id: data.filmeId, ativo: true }
+    })
+    if (!filme) {
+      return { success: false, error: 'Filme não encontrado ou inativo' }
+    }
+
     const sessao = await prisma.sessao.update({
       where: { id },
       data: {
-        filmeId: data.filmeId,
+        filmeId: data.filmeId.trim(),
         dataHora: data.dataHora,
-        sala: data.sala,
-        linhas: data.linhas || 5,
-        colunas: data.colunas || 10,
+        sala: data.sala.trim(),
+        linhas: data.linhas,
+        colunas: data.colunas,
         preco: data.preco,
       },
       include: {

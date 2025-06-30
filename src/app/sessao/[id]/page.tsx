@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, use } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -49,7 +49,7 @@ interface PageProps {
 }
 
 export default function SessaoPage({ params }: PageProps) {
-  const resolvedParams = use(params);
+  const { id } = use(params);
   const [sessao, setSessao] = useState<SessaoDetalhada | null>(null);
   const [assentosOcupados, setAssentosOcupados] = useState<string[]>([]);
   const [assentosSelecionados, setAssentosSelecionados] = useState<string[]>(
@@ -68,7 +68,7 @@ export default function SessaoPage({ params }: PageProps) {
       if (showLoading) setAtualizandoAssentos(true);
 
       try {
-        const assentosResult = await obterAssentosOcupados(resolvedParams.id);
+        const assentosResult = await obterAssentosOcupados(id);
         if (assentosResult.success && assentosResult.data) {
           const novosAssentosOcupados = assentosResult.data;
           setAssentosOcupados(novosAssentosOcupados);
@@ -104,15 +104,15 @@ export default function SessaoPage({ params }: PageProps) {
         if (showLoading) setAtualizandoAssentos(false);
       }
     },
-    [resolvedParams.id]
+    [id]
   );
 
   useEffect(() => {
     const carregarDados = async () => {
       try {
         const [sessaoResult, assentosResult] = await Promise.all([
-          buscarSessaoAtivaPublica(resolvedParams.id),
-          obterAssentosOcupados(resolvedParams.id),
+          buscarSessaoAtivaPublica(id),
+          obterAssentosOcupados(id),
         ]);
 
         if (sessaoResult.success && sessaoResult.data) {
@@ -130,7 +130,7 @@ export default function SessaoPage({ params }: PageProps) {
     };
 
     carregarDados();
-  }, [resolvedParams.id]);
+  }, [id]);
 
   // Atualizar assentos quando a página ganha foco (para sincronizar com outras abas/usuários)
   useEffect(() => {
@@ -332,11 +332,13 @@ export default function SessaoPage({ params }: PageProps) {
               </CardHeader>
               <CardContent className="space-y-4">
                 {sessao.filme.banner && (
-                  <div className="aspect-[2/3] bg-muted rounded-lg overflow-hidden">
-                    <img
+                  <div className="aspect-[2/3] bg-muted rounded-lg overflow-hidden relative">
+                    <Image
                       src={sessao.filme.banner}
                       alt={sessao.filme.titulo}
-                      className="w-full h-full object-cover"
+                      fill
+                      className="object-cover"
+                      sizes="(max-width: 768px) 100vw, 33vw"
                     />
                   </div>
                 )}
