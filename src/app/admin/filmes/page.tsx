@@ -29,12 +29,14 @@ import {
   Filter,
   MoreHorizontal,
   Loader2,
+  Check,
 } from "lucide-react";
 import Link from "next/link";
 
 export default function FilmesPage() {
   const [filtroTexto, setFiltroTexto] = useState("");
   const [filtroGenero, setFiltroGenero] = useState("todos");
+  const [filtroStatus, setFiltroStatus] = useState("ativos");
   const [loadingFilme, setLoadingFilme] = useState<string | null>(null);
 
   const { data: filmes, isLoading: loading, error } = useMovieCache();
@@ -46,9 +48,21 @@ export default function FilmesPage() {
   ]);
 
   const filmesFiltrados = filmesComTextoFiltrado.filter((filme) => {
+    // Filtro por gênero
     if (filtroGenero !== "todos") {
-      return filme.genero.toLowerCase() === filtroGenero.toLowerCase();
+      if (filme.genero.toLowerCase() !== filtroGenero.toLowerCase()) {
+        return false;
+      }
     }
+
+    // Filtro por status
+    if (filtroStatus === "ativos") {
+      return filme.ativo === true;
+    } else if (filtroStatus === "inativos") {
+      return filme.ativo === false;
+    }
+    // "todos" mostra ativos e inativos
+
     return true;
   });
 
@@ -57,26 +71,28 @@ export default function FilmesPage() {
     new Set((filmes || []).map((filme) => filme.genero))
   );
 
-  const handleToggleAtivo = async (filmeId: string, ativo: boolean) => {
+  const handleToggleFilme = async (filmeId: string, ativo: boolean) => {
     setLoadingFilme(filmeId);
 
     try {
       const action = ativo ? desativarFilme : ativarFilme;
-      const actionName = ativo ? "desativar" : "ativar";
+      const actionName = ativo ? "desativado" : "ativado";
 
       const result = await action(filmeId);
 
       if (result.success) {
-        toast.success(`Filme ${ativo ? "desativado" : "ativado"} com sucesso!`);
+        toast.success(`Filme ${actionName} com sucesso!`);
 
         // Invalidar cache manualmente para atualização imediata
         invalidateMovies();
       } else {
-        toast.error(`Erro ao ${actionName} filme: ${result.error}`);
+        toast.error(
+          `Erro ao ${ativo ? "desativar" : "ativar"} filme: ${result.error}`
+        );
       }
     } catch (error) {
-      console.error("Erro ao alterar status do filme:", error);
-      toast.error("Erro inesperado ao alterar status do filme");
+      console.error(`Erro ao ${ativo ? "desativar" : "ativar"} filme:`, error);
+      toast.error(`Erro inesperado ao ${ativo ? "desativar" : "ativar"} filme`);
     } finally {
       setLoadingFilme(null);
     }
@@ -139,20 +155,33 @@ export default function FilmesPage() {
                 />
               </div>
             </div>
-            <Select value={filtroGenero} onValueChange={setFiltroGenero}>
-              <SelectTrigger className="w-[150px]">
-                <Filter className="mr-2 h-4 w-4" />
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="todos">Todos os gêneros</SelectItem>
-                {generosUnicos.map((genero) => (
-                  <SelectItem key={genero} value={genero}>
-                    {genero}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="flex gap-2">
+              <Select value={filtroGenero} onValueChange={setFiltroGenero}>
+                <SelectTrigger className="w-[150px]">
+                  <Filter className="mr-2 h-4 w-4" />
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos os gêneros</SelectItem>
+                  {generosUnicos.map((genero) => (
+                    <SelectItem key={genero} value={genero}>
+                      {genero}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <Select value={filtroStatus} onValueChange={setFiltroStatus}>
+                <SelectTrigger className="w-[120px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ativos">Ativos</SelectItem>
+                  <SelectItem value="inativos">Inativos</SelectItem>
+                  <SelectItem value="todos">Todos</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -263,7 +292,7 @@ export default function FilmesPage() {
                           variant="outline"
                           size="sm"
                           onClick={() =>
-                            handleToggleAtivo(filme.id, filme.ativo)
+                            handleToggleFilme(filme.id, filme.ativo)
                           }
                           disabled={loadingFilme === filme.id}
                           className={
@@ -284,7 +313,7 @@ export default function FilmesPage() {
                             </>
                           ) : (
                             <>
-                              <Trash2 className="mr-1 h-3 w-3" />
+                              <Check className="mr-1 h-3 w-3" />
                               Ativar
                             </>
                           )}
@@ -357,7 +386,7 @@ export default function FilmesPage() {
                           variant="ghost"
                           size="icon"
                           onClick={() =>
-                            handleToggleAtivo(filme.id, filme.ativo)
+                            handleToggleFilme(filme.id, filme.ativo)
                           }
                           disabled={loadingFilme === filme.id}
                           className={`h-8 w-8 hover:scale-110 transition-all duration-200 ${
@@ -377,8 +406,10 @@ export default function FilmesPage() {
                         >
                           {loadingFilme === filme.id ? (
                             <Loader2 className="h-3 w-3 animate-spin" />
-                          ) : (
+                          ) : filme.ativo ? (
                             <Trash2 className="h-3 w-3" />
+                          ) : (
+                            <Check className="h-3 w-3" />
                           )}
                         </Button>
                       </div>

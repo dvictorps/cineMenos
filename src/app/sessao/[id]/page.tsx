@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { SeatSelector } from "@/components/ui/seat-selector";
 import {
-  buscarSessaoPorId,
+  buscarSessaoAtivaPublica,
   obterAssentosOcupados,
   criarReserva,
 } from "@/actions";
@@ -66,7 +66,7 @@ export default function SessaoPage({ params }: PageProps) {
     const carregarDados = async () => {
       try {
         const [sessaoResult, assentosResult] = await Promise.all([
-          buscarSessaoPorId(resolvedParams.id),
+          buscarSessaoAtivaPublica(resolvedParams.id),
           obterAssentosOcupados(resolvedParams.id),
         ]);
 

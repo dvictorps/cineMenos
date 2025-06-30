@@ -72,6 +72,35 @@ export async function buscarSessaoPorId(id: string) {
   }
 }
 
+export async function buscarSessaoAtivaPublica(id: string) {
+  try {
+    const sessao = await prisma.sessao.findUnique({
+      where: { 
+        id,
+        ativo: true,
+        filme: {
+          ativo: true,
+        },
+      },
+      include: {
+        filme: true,
+        reservas: {
+          where: { tipo: 'reserva' },
+        },
+      },
+    })
+
+    if (!sessao) {
+      return { success: false, error: 'Sessão não encontrada ou não está disponível' }
+    }
+
+    return { success: true, data: sessao }
+  } catch (error) {
+    console.error('Erro ao buscar sessão ativa:', error)
+    return { success: false, error: 'Erro ao buscar sessão' }
+  }
+}
+
 export async function atualizarSessao(id: string, data: CreateSessaoData) {
   try {
     const sessao = await prisma.sessao.update({
