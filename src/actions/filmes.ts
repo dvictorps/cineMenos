@@ -2,7 +2,7 @@
 
 import { prisma } from '@/lib/prisma'
 import { revalidatePath, revalidateTag } from 'next/cache'
-import { CACHE_TAGS } from '@/lib/server-cache'
+import { CACHE_TAGS, getCachedActiveMovies } from '@/lib/server-cache'
 import type { CreateFilmeData } from '@/lib/types'
 
 export async function criarFilme(data: CreateFilmeData) {
@@ -129,37 +129,7 @@ export async function ativarFilme(id: string) {
 
 export async function listarFilmesAtivos() {
   try {
-    // Query ultra-otimizada: apenas dados essenciais para listagem rápida
-    const filmes = await prisma.filme.findMany({
-      where: { ativo: true },
-      select: {
-        id: true,
-        titulo: true,
-        descricao: true,
-        duracao: true,
-        genero: true,
-        classificacao: true,
-        banner: true,
-        sessoes: {
-          where: {
-            ativo: true,
-            dataHora: {
-              gte: new Date(),
-            },
-          },
-          select: {
-            id: true,
-            dataHora: true,
-            preco: true,
-            sala: true,
-          },
-          orderBy: { dataHora: 'asc' },
-          take: 5, // Apenas 5 próximas sessões por filme para listagem
-        },
-      },
-      orderBy: { titulo: 'asc' },
-    })
-
+    const filmes = await getCachedActiveMovies()
     return { success: true, data: filmes }
   } catch (error) {
     console.error('Erro ao listar filmes ativos:', error)

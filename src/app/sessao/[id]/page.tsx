@@ -21,6 +21,7 @@ import {
   ArrowLeft,
   Ticket,
   CheckCircle,
+  Loader2,
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
@@ -167,8 +168,8 @@ export default function SessaoPage({ params }: PageProps) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
-          <Film className="h-16 w-16 animate-pulse mx-auto mb-4 text-primary" />
-          <p className="text-xl text-muted-foreground">Carregando sessão...</p>
+          <Loader2 className="h-16 w-16 animate-spin mx-auto mb-4 text-white" />
+          <p className="text-xl text-white">Carregando sessão...</p>
         </div>
       </div>
     );

@@ -1,7 +1,7 @@
 'use client'
 
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { listarFilmes } from '@/actions'
+import { listarFilmes, listarFilmesAtivos } from '@/actions'
 
 const CACHE_KEYS = {
   movies: 'movies',
@@ -22,6 +22,24 @@ export function useActiveMovies() {
     },
     staleTime: 15 * 60 * 1000, // 15 minutos
     gcTime: 30 * 60 * 1000, // 30 minutos
+  })
+}
+
+// Hook para filmes da tela inicial (cache de 5 minutos)
+export function useHomeMovies() {
+  return useQuery({
+    queryKey: ['home-movies'],
+    queryFn: async () => {
+      const result = await listarFilmesAtivos()
+      if (result.success && result.data) {
+        return result.data
+      }
+      throw new Error(result.error || 'Erro ao carregar filmes')
+    },
+    staleTime: 5 * 60 * 1000, // 5 minutos
+    gcTime: 10 * 60 * 1000, // 10 minutos
+    refetchOnMount: false, // Não recarrega se os dados ainda estão válidos
+    refetchOnWindowFocus: false, // Não recarrega ao focar na janela
   })
 }
 
@@ -52,6 +70,7 @@ export function useInvalidateMovies() {
     invalidateMovies: () => {
       queryClient.invalidateQueries({ queryKey: [CACHE_KEYS.movies] })
       queryClient.invalidateQueries({ queryKey: [CACHE_KEYS.activeMovies] })
+      queryClient.invalidateQueries({ queryKey: ['home-movies'] })
     },
     invalidateMovieDetails: (id: string) => {
       queryClient.invalidateQueries({ queryKey: CACHE_KEYS.movieDetails(id) })
