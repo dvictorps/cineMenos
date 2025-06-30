@@ -98,11 +98,18 @@ export async function desativarFilme(id: string) {
     const filme = await prisma.filme.update({
       where: { id },
       data: { ativo: false },
+      include: {
+        sessoes: true,
+      },
     })
 
+    // Invalidar múltiplos caches relacionados
     revalidatePath('/admin/filmes')
+    revalidatePath('/')
     revalidateTag(CACHE_TAGS.movies)
+    revalidateTag(CACHE_TAGS.sessions)
     revalidateTag(CACHE_TAGS.dashboard)
+    
     return { success: true, data: filme }
   } catch (error) {
     console.error('Erro ao desativar filme:', error)
@@ -115,11 +122,18 @@ export async function ativarFilme(id: string) {
     const filme = await prisma.filme.update({
       where: { id },
       data: { ativo: true },
+      include: {
+        sessoes: true,
+      },
     })
 
+    // Invalidar múltiplos caches relacionados
     revalidatePath('/admin/filmes')
+    revalidatePath('/')
     revalidateTag(CACHE_TAGS.movies)
+    revalidateTag(CACHE_TAGS.sessions)
     revalidateTag(CACHE_TAGS.dashboard)
+    
     return { success: true, data: filme }
   } catch (error) {
     console.error('Erro ao ativar filme:', error)

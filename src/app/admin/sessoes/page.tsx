@@ -13,7 +13,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { desativarSessao, ativarSessao } from "@/actions";
-import { useSessionCache } from "@/hooks/useSessionCache";
+import {
+  useSessionCache,
+  useInvalidateSessions,
+} from "@/hooks/useSessionCache";
+import { toast } from "sonner";
 import {
   Plus,
   Search,
@@ -34,8 +38,10 @@ export default function SessoesPage() {
   const [filtroTexto, setFiltroTexto] = useState("");
   const [filtroData, setFiltroData] = useState("todas");
   const [filtroStatus, setFiltroStatus] = useState("todos");
+  const [loadingSessao, setLoadingSessao] = useState<string | null>(null);
 
   const { data: sessoes, isLoading: loading, error } = useSessionCache();
+  const { invalidateSessions } = useInvalidateSessions();
 
   // Lógica de filtros
   const sessoesFiltradas = (sessoes || []).filter((sessao) => {
@@ -79,15 +85,29 @@ export default function SessoesPage() {
   });
 
   const handleToggleAtivo = async (sessaoId: string, ativo: boolean) => {
+    setLoadingSessao(sessaoId);
+
     try {
       const action = ativo ? desativarSessao : ativarSessao;
+      const actionName = ativo ? "desativar" : "ativar";
+
       const result = await action(sessaoId);
 
       if (result.success) {
-        // Cache will be invalidated automatically by server action
+        toast.success(
+          `Sessão ${ativo ? "desativada" : "ativada"} com sucesso!`
+        );
+
+        // Invalidar cache manualmente para atualização imediata
+        invalidateSessions();
+      } else {
+        toast.error(`Erro ao ${actionName} sessão: ${result.error}`);
       }
     } catch (error) {
       console.error("Erro ao alterar status da sessão:", error);
+      toast.error("Erro inesperado ao alterar status da sessão");
+    } finally {
+      setLoadingSessao(null);
     }
   };
 
@@ -360,13 +380,21 @@ export default function SessoesPage() {
                             onClick={() =>
                               handleToggleAtivo(sessao.id, sessao.ativo)
                             }
+                            disabled={loadingSessao === sessao.id}
                             className={
                               sessao.ativo
                                 ? "text-red-600 hover:text-red-700"
                                 : "text-green-600 hover:text-green-700"
                             }
                           >
-                            {sessao.ativo ? (
+                            {loadingSessao === sessao.id ? (
+                              <>
+                                <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                                {sessao.ativo
+                                  ? "Desativando..."
+                                  : "Ativando..."}
+                              </>
+                            ) : sessao.ativo ? (
                               <>
                                 <Trash2 className="mr-1 h-3 w-3" />
                                 Desativar
@@ -484,18 +512,27 @@ export default function SessoesPage() {
                             onClick={() =>
                               handleToggleAtivo(sessao.id, sessao.ativo)
                             }
+                            disabled={loadingSessao === sessao.id}
                             className={`h-8 w-8 hover:scale-110 transition-all duration-200 ${
                               sessao.ativo
                                 ? "text-red-600 hover:text-red-700"
                                 : "text-green-600 hover:text-green-700"
                             }`}
                             title={
-                              sessao.ativo
+                              loadingSessao === sessao.id
+                                ? sessao.ativo
+                                  ? "Desativando..."
+                                  : "Ativando..."
+                                : sessao.ativo
                                 ? "Desativar Sessão"
                                 : "Ativar Sessão"
                             }
                           >
-                            <Trash2 className="h-3 w-3" />
+                            {loadingSessao === sessao.id ? (
+                              <Loader2 className="h-3 w-3 animate-spin" />
+                            ) : (
+                              <Trash2 className="h-3 w-3" />
+                            )}
                           </Button>
                         </div>
                       </div>
