@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -13,7 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { listarFilmesAtivos } from "@/actions";
+import { useHomeMovies } from "@/hooks/useMovieCache";
 import {
   Search,
   Calendar,
@@ -28,46 +28,12 @@ import Link from "next/link";
 import Image from "next/image";
 import { FloatingChat } from "@/components/ai-agent/floating-chat";
 
-interface FilmeComSessoes {
-  id: string;
-  titulo: string;
-  descricao: string;
-  duracao: number;
-  genero: string;
-  classificacao: string;
-  banner: string | null;
-  sessoes: Array<{
-    id: string;
-    dataHora: Date;
-    sala: string;
-    preco: number;
-  }>;
-}
-
 export default function HomePage() {
-  const [filmes, setFilmes] = useState<FilmeComSessoes[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data: filmes = [], isLoading: loading } = useHomeMovies();
   const [filtroTexto, setFiltroTexto] = useState("");
   const [filtroGenero, setFiltroGenero] = useState("todos");
   const [adminLoading, setAdminLoading] = useState(false);
   const router = useRouter();
-
-  useEffect(() => {
-    const carregarFilmes = async () => {
-      try {
-        const result = await listarFilmesAtivos();
-        if (result.success && result.data) {
-          setFilmes(result.data);
-        }
-      } catch (error) {
-        console.error("Erro ao carregar filmes:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    carregarFilmes();
-  }, []);
 
   const handleAdminClick = () => {
     setAdminLoading(true);

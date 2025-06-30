@@ -9,7 +9,7 @@ export const CACHE_TAGS = {
   dashboard: 'dashboard',
 } as const
 
-// Cache para filmes ativos (30 minutos)
+// Cache para filmes ativos (10 minutos - otimizado para tela inicial)
 export const getCachedActiveMovies = unstable_cache(
   async () => {
     const filmes = await prisma.filme.findMany({
@@ -46,7 +46,7 @@ export const getCachedActiveMovies = unstable_cache(
   ['active-movies'],
   {
     tags: [CACHE_TAGS.movies],
-    revalidate: 1800, // 30 minutos
+    revalidate: 600, // 10 minutos - mais frequente para tela inicial
   }
 )
 
