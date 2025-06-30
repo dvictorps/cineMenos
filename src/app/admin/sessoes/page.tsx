@@ -31,13 +31,15 @@ import {
   MoreHorizontal,
   Ticket,
   Loader2,
+  Check,
 } from "lucide-react";
 import Link from "next/link";
 
 export default function SessoesPage() {
   const [filtroTexto, setFiltroTexto] = useState("");
   const [filtroData, setFiltroData] = useState("todas");
-  const [filtroStatus, setFiltroStatus] = useState("todos");
+  const [filtroStatusSessao, setFiltroStatusSessao] = useState("todos");
+  const [filtroAtivo, setFiltroAtivo] = useState("ativos");
   const [loadingSessao, setLoadingSessao] = useState<string | null>(null);
 
   const { data: sessoes, isLoading: loading, error } = useSessionCache();
@@ -75,37 +77,47 @@ export default function SessoesPage() {
       }
     }
 
-    // Filtro por status
-    if (filtroStatus !== "todos") {
+    // Filtro por status de sessão
+    if (filtroStatusSessao !== "todos") {
       const status = getStatusSessao(sessao.dataHora);
-      if (status.label.toLowerCase() !== filtroStatus) return false;
+      if (status.label.toLowerCase() !== filtroStatusSessao) return false;
     }
+
+    // Filtro por ativo/inativo
+    if (filtroAtivo === "ativos") {
+      return sessao.ativo === true;
+    } else if (filtroAtivo === "inativos") {
+      return sessao.ativo === false;
+    }
+    // "todos" mostra ativos e inativos
 
     return true;
   });
 
-  const handleToggleAtivo = async (sessaoId: string, ativo: boolean) => {
+  const handleToggleSessao = async (sessaoId: string, ativo: boolean) => {
     setLoadingSessao(sessaoId);
 
     try {
       const action = ativo ? desativarSessao : ativarSessao;
-      const actionName = ativo ? "desativar" : "ativar";
+      const actionName = ativo ? "desativada" : "ativada";
 
       const result = await action(sessaoId);
 
       if (result.success) {
-        toast.success(
-          `Sessão ${ativo ? "desativada" : "ativada"} com sucesso!`
-        );
+        toast.success(`Sessão ${actionName} com sucesso!`);
 
         // Invalidar cache manualmente para atualização imediata
         invalidateSessions();
       } else {
-        toast.error(`Erro ao ${actionName} sessão: ${result.error}`);
+        toast.error(
+          `Erro ao ${ativo ? "desativar" : "ativar"} sessão: ${result.error}`
+        );
       }
     } catch (error) {
-      console.error("Erro ao alterar status da sessão:", error);
-      toast.error("Erro inesperado ao alterar status da sessão");
+      console.error(`Erro ao ${ativo ? "desativar" : "ativar"} sessão:`, error);
+      toast.error(
+        `Erro inesperado ao ${ativo ? "desativar" : "ativar"} sessão`
+      );
     } finally {
       setLoadingSessao(null);
     }
@@ -222,7 +234,10 @@ export default function SessoesPage() {
                   <SelectItem value="semana">Esta semana</SelectItem>
                 </SelectContent>
               </Select>
-              <Select value={filtroStatus} onValueChange={setFiltroStatus}>
+              <Select
+                value={filtroStatusSessao}
+                onValueChange={setFiltroStatusSessao}
+              >
                 <SelectTrigger className="w-[120px]">
                   <Filter className="mr-2 h-4 w-4" />
                   <SelectValue />
@@ -232,6 +247,17 @@ export default function SessoesPage() {
                   <SelectItem value="agendada">Agendada</SelectItem>
                   <SelectItem value="em breve">Em breve</SelectItem>
                   <SelectItem value="finalizada">Finalizada</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <Select value={filtroAtivo} onValueChange={setFiltroAtivo}>
+                <SelectTrigger className="w-[120px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ativos">Ativos</SelectItem>
+                  <SelectItem value="inativos">Inativos</SelectItem>
+                  <SelectItem value="todos">Todos</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -378,7 +404,7 @@ export default function SessoesPage() {
                             variant="outline"
                             size="sm"
                             onClick={() =>
-                              handleToggleAtivo(sessao.id, sessao.ativo)
+                              handleToggleSessao(sessao.id, sessao.ativo)
                             }
                             disabled={loadingSessao === sessao.id}
                             className={
@@ -401,7 +427,7 @@ export default function SessoesPage() {
                               </>
                             ) : (
                               <>
-                                <Trash2 className="mr-1 h-3 w-3" />
+                                <Check className="mr-1 h-3 w-3" />
                                 Ativar
                               </>
                             )}
@@ -510,7 +536,7 @@ export default function SessoesPage() {
                             variant="ghost"
                             size="icon"
                             onClick={() =>
-                              handleToggleAtivo(sessao.id, sessao.ativo)
+                              handleToggleSessao(sessao.id, sessao.ativo)
                             }
                             disabled={loadingSessao === sessao.id}
                             className={`h-8 w-8 hover:scale-110 transition-all duration-200 ${
@@ -530,8 +556,10 @@ export default function SessoesPage() {
                           >
                             {loadingSessao === sessao.id ? (
                               <Loader2 className="h-3 w-3 animate-spin" />
-                            ) : (
+                            ) : sessao.ativo ? (
                               <Trash2 className="h-3 w-3" />
+                            ) : (
+                              <Check className="h-3 w-3" />
                             )}
                           </Button>
                         </div>
