@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -45,11 +45,10 @@ interface SessaoDetalhada {
 }
 
 interface PageProps {
-  params: Promise<{ id: string }>;
+  params: { id: string };
 }
 
 export default function SessaoPage({ params }: PageProps) {
-  const resolvedParams = use(params);
   const [sessao, setSessao] = useState<SessaoDetalhada | null>(null);
   const [assentosOcupados, setAssentosOcupados] = useState<string[]>([]);
   const [assentosSelecionados, setAssentosSelecionados] = useState<string[]>(
@@ -68,7 +67,7 @@ export default function SessaoPage({ params }: PageProps) {
       if (showLoading) setAtualizandoAssentos(true);
 
       try {
-        const assentosResult = await obterAssentosOcupados(resolvedParams.id);
+        const assentosResult = await obterAssentosOcupados(params.id);
         if (assentosResult.success && assentosResult.data) {
           const novosAssentosOcupados = assentosResult.data;
           setAssentosOcupados(novosAssentosOcupados);
@@ -104,15 +103,15 @@ export default function SessaoPage({ params }: PageProps) {
         if (showLoading) setAtualizandoAssentos(false);
       }
     },
-    [resolvedParams.id]
+    [params.id]
   );
 
   useEffect(() => {
     const carregarDados = async () => {
       try {
         const [sessaoResult, assentosResult] = await Promise.all([
-          buscarSessaoAtivaPublica(resolvedParams.id),
-          obterAssentosOcupados(resolvedParams.id),
+          buscarSessaoAtivaPublica(params.id),
+          obterAssentosOcupados(params.id),
         ]);
 
         if (sessaoResult.success && sessaoResult.data) {
@@ -130,7 +129,7 @@ export default function SessaoPage({ params }: PageProps) {
     };
 
     carregarDados();
-  }, [resolvedParams.id]);
+  }, [params.id]);
 
   // Atualizar assentos quando a página ganha foco (para sincronizar com outras abas/usuários)
   useEffect(() => {

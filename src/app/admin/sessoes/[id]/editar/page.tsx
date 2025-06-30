@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, use } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -28,13 +28,12 @@ import {
 import { toast } from "sonner";
 
 interface EditarSessaoPageProps {
-  params: Promise<{
+  params: {
     id: string;
-  }>;
+  };
 }
 
 export default function EditarSessaoPage({ params }: EditarSessaoPageProps) {
-  const resolvedParams = use(params);
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [carregando, setCarregando] = useState(true);
@@ -72,7 +71,7 @@ export default function EditarSessaoPage({ params }: EditarSessaoPageProps) {
         setCarregandoFilmes(false);
 
         // Carregar dados da sessão
-        const sessaoResult = await buscarSessaoPorId(resolvedParams.id);
+        const sessaoResult = await buscarSessaoPorId(params.id);
         if (sessaoResult.success && sessaoResult.data) {
           const sessao = sessaoResult.data;
           const dataHora = new Date(sessao.dataHora);
@@ -100,7 +99,7 @@ export default function EditarSessaoPage({ params }: EditarSessaoPageProps) {
     };
 
     carregarDados();
-  }, [resolvedParams.id, router]);
+  }, [params.id, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -109,7 +108,7 @@ export default function EditarSessaoPage({ params }: EditarSessaoPageProps) {
     try {
       const dataHora = new Date(`${formData.data}T${formData.hora}`);
 
-      const result = await atualizarSessao(resolvedParams.id, {
+      const result = await atualizarSessao(params.id, {
         filmeId: formData.filmeId,
         dataHora,
         sala: formData.sala,
