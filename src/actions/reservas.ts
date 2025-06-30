@@ -81,14 +81,11 @@ export async function cancelarReserva(reservaId: string) {
       return { success: false, error: 'Reserva já foi cancelada' }
     }
 
-    const cancelamento = await prisma.reserva.create({
+    const reservaCancelada = await prisma.reserva.update({
+      where: { id: reservaId },
       data: {
-        sessaoId: reservaExistente.sessaoId,
-        assentos: reservaExistente.assentos,
-        quantidade: reservaExistente.quantidade,
         tipo: 'cancelamento',
-        nomeCliente: reservaExistente.nomeCliente,
-        emailCliente: reservaExistente.emailCliente,
+        updatedAt: new Date(),
       },
       include: {
         sessao: {
@@ -99,12 +96,13 @@ export async function cancelarReserva(reservaId: string) {
       },
     })
 
-    revalidatePath('/reservas')
-    revalidatePath(`/sessoes/${reservaExistente.sessaoId}`)
+    revalidatePath('/admin/reservas')
+    revalidatePath(`/admin/sessoes/${reservaExistente.sessaoId}`)
+    revalidatePath(`/sessao/${reservaExistente.sessaoId}`)
     revalidateTag(CACHE_TAGS.reservations)
     revalidateTag(CACHE_TAGS.sessions)
     revalidateTag(CACHE_TAGS.dashboard)
-    return { success: true, data: cancelamento }
+    return { success: true, data: reservaCancelada }
   } catch (error) {
     console.error('Erro ao cancelar reserva:', error)
     return { success: false, error: 'Erro ao cancelar reserva' }
