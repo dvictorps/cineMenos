@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/table";
 import { listarReservas, cancelarReserva } from "@/actions/reservas";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import {
   Search,
   Calendar,
@@ -27,6 +28,8 @@ import {
   X,
   CheckCircle,
   Loader2,
+  Check,
+  AlertTriangle,
 } from "lucide-react";
 
 export default function ReservasPage() {
@@ -72,6 +75,11 @@ export default function ReservasPage() {
     } catch {
       return assentosJson;
     }
+  };
+
+  const truncateText = (text: string, maxLength: number) => {
+    if (text.length <= maxLength) return text;
+    return text.substring(0, maxLength) + "...";
   };
 
   const reservasFiltradas = reservas.filter((reserva) => {
@@ -184,124 +192,146 @@ export default function ReservasPage() {
             <div className="space-y-4">
               {/* Versão Desktop */}
               <div className="hidden lg:block">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Cliente</TableHead>
-                      <TableHead>Filme & Sessão</TableHead>
-                      <TableHead>Assentos</TableHead>
-                      <TableHead>Valor</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Data da Reserva</TableHead>
-                      <TableHead>Ações</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {reservasFiltradas.map((reserva) => (
-                      <TableRow key={reserva.id}>
-                        <TableCell>
-                          <div className="space-y-1">
-                            <div className="flex items-center space-x-2">
-                              <User className="h-4 w-4 text-muted-foreground" />
-                              <span className="font-medium text-white">
-                                {reserva.nomeCliente || "N/A"}
-                              </span>
-                            </div>
-                            <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-                              <Mail className="h-3 w-3" />
-                              <span>{reserva.emailCliente || "N/A"}</span>
-                            </div>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="space-y-1">
-                            <div className="flex items-center space-x-2">
-                              <Film className="h-4 w-4 text-muted-foreground" />
-                              <span className="font-medium text-white">
-                                {reserva.sessao.filme.titulo}
-                              </span>
-                            </div>
-                            <div className="text-sm text-muted-foreground space-y-1">
-                              <div className="flex items-center space-x-2">
-                                <Calendar className="h-3 w-3" />
-                                <span>
-                                  {formatarData(reserva.sessao.dataHora)}
-                                </span>
-                              </div>
-                              <div className="flex items-center space-x-2">
-                                <Clock className="h-3 w-3" />
-                                <span>
-                                  {formatarHora(reserva.sessao.dataHora)}
-                                </span>
-                              </div>
-                              <div className="flex items-center space-x-2">
-                                <MapPin className="h-3 w-3" />
-                                <span>{reserva.sessao.sala}</span>
-                              </div>
-                            </div>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="space-y-1">
-                            <span className="font-medium text-white">
-                              {formatarAssentos(reserva.assentos)}
-                            </span>
-                            <div className="text-sm text-muted-foreground">
-                              {reserva.quantidade} ingresso
-                              {reserva.quantidade !== 1 ? "s" : ""}
-                            </div>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <span className="font-medium text-green-500">
-                            R${" "}
-                            {(
-                              reserva.quantidade * reserva.sessao.preco
-                            ).toFixed(2)}
-                          </span>
-                        </TableCell>
-                        <TableCell>
-                          <Badge
-                            variant={
-                              reserva.tipo === "reserva"
-                                ? "default"
-                                : "destructive"
-                            }
-                            className={
-                              reserva.tipo === "reserva"
-                                ? "bg-green-600 text-white"
-                                : "bg-red-600 text-white"
-                            }
-                          >
-                            {reserva.tipo === "reserva" ? (
-                              <CheckCircle className="mr-1 h-3 w-3" />
-                            ) : (
-                              <X className="mr-1 h-3 w-3" />
-                            )}
-                            {reserva.tipo === "reserva" ? "Ativa" : "Cancelada"}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <span className="text-sm">
-                            {formatarData(reserva.dataReserva)}
-                          </span>
-                        </TableCell>
-                        <TableCell>
-                          {reserva.tipo === "reserva" && (
-                            <CancelButton
-                              reservaId={reserva.id}
-                              onCancel={() => {
-                                queryClient.invalidateQueries({
-                                  queryKey: ["reservas"],
-                                });
-                              }}
-                            />
-                          )}
-                        </TableCell>
+                <div className="overflow-x-auto">
+                  <Table className="table-fixed w-full min-w-[1000px]">
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-[180px]">Cliente</TableHead>
+                        <TableHead className="w-[250px]">
+                          Filme & Sessão
+                        </TableHead>
+                        <TableHead className="w-[120px]">Assentos</TableHead>
+                        <TableHead className="w-[100px]">Valor</TableHead>
+                        <TableHead className="w-[100px]">Status</TableHead>
+                        <TableHead className="w-[120px]">
+                          Data da Reserva
+                        </TableHead>
+                        <TableHead className="w-[120px]">Ações</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                    </TableHeader>
+                    <TableBody>
+                      {reservasFiltradas.map((reserva) => (
+                        <TableRow key={reserva.id}>
+                          <TableCell className="max-w-[180px]">
+                            <div className="space-y-1">
+                              <div className="flex items-center space-x-2">
+                                <User className="h-4 w-4 text-muted-foreground" />
+                                <span
+                                  className="font-medium text-white truncate"
+                                  title={reserva.nomeCliente || "N/A"}
+                                >
+                                  {reserva.nomeCliente || "N/A"}
+                                </span>
+                              </div>
+                              <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+                                <Mail className="h-3 w-3" />
+                                <span
+                                  className="truncate"
+                                  title={reserva.emailCliente || "N/A"}
+                                >
+                                  {reserva.emailCliente || "N/A"}
+                                </span>
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell className="max-w-[250px]">
+                            <div className="space-y-1">
+                              <div className="flex items-center space-x-2">
+                                <Film className="h-4 w-4 text-muted-foreground" />
+                                <span
+                                  className="font-medium text-white"
+                                  title={reserva.sessao.filme.titulo}
+                                >
+                                  {truncateText(
+                                    reserva.sessao.filme.titulo,
+                                    35
+                                  )}
+                                </span>
+                              </div>
+                              <div className="text-sm text-muted-foreground space-y-1">
+                                <div className="flex items-center space-x-2">
+                                  <Calendar className="h-3 w-3" />
+                                  <span>
+                                    {formatarData(reserva.sessao.dataHora)}
+                                  </span>
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                  <Clock className="h-3 w-3" />
+                                  <span>
+                                    {formatarHora(reserva.sessao.dataHora)}
+                                  </span>
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                  <MapPin className="h-3 w-3" />
+                                  <span>{reserva.sessao.sala}</span>
+                                </div>
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell className="max-w-[120px]">
+                            <div className="space-y-1">
+                              <span className="font-medium text-white">
+                                {formatarAssentos(reserva.assentos)}
+                              </span>
+                              <div className="text-sm text-muted-foreground">
+                                {reserva.quantidade} ingresso
+                                {reserva.quantidade !== 1 ? "s" : ""}
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell className="max-w-[100px]">
+                            <span className="font-medium text-green-500">
+                              R${" "}
+                              {(
+                                reserva.quantidade * reserva.sessao.preco
+                              ).toFixed(2)}
+                            </span>
+                          </TableCell>
+                          <TableCell className="max-w-[100px]">
+                            <Badge
+                              variant={
+                                reserva.tipo === "reserva"
+                                  ? "default"
+                                  : "destructive"
+                              }
+                              className={
+                                reserva.tipo === "reserva"
+                                  ? "bg-green-600 text-white"
+                                  : "bg-red-600 text-white"
+                              }
+                            >
+                              {reserva.tipo === "reserva" ? (
+                                <CheckCircle className="mr-1 h-3 w-3" />
+                              ) : (
+                                <X className="mr-1 h-3 w-3" />
+                              )}
+                              {reserva.tipo === "reserva"
+                                ? "Ativa"
+                                : "Cancelada"}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="max-w-[120px]">
+                            <span className="text-sm">
+                              {formatarData(reserva.dataReserva)}
+                            </span>
+                          </TableCell>
+                          <TableCell className="max-w-[120px]">
+                            {reserva.tipo === "reserva" && (
+                              <CancelButton
+                                reservaId={reserva.id}
+                                onCancel={() => {
+                                  queryClient.invalidateQueries({
+                                    queryKey: ["reservas"],
+                                  });
+                                }}
+                              />
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
               </div>
 
               {/* Versão Mobile */}
@@ -338,8 +368,11 @@ export default function ReservasPage() {
                         <div className="space-y-2">
                           <div className="flex items-center space-x-2">
                             <Film className="h-4 w-4 text-muted-foreground" />
-                            <span className="font-medium text-white">
-                              {reserva.sessao.filme.titulo}
+                            <span
+                              className="font-medium text-white"
+                              title={reserva.sessao.filme.titulo}
+                            >
+                              {truncateText(reserva.sessao.filme.titulo, 30)}
                             </span>
                           </div>
                           <div className="grid grid-cols-2 gap-2 text-sm text-muted-foreground">
@@ -421,39 +454,73 @@ interface CancelButtonProps {
 
 function CancelButton({ reservaId, onCancel }: CancelButtonProps) {
   const [loading, setLoading] = useState(false);
+  const [showConfirmation, setShowConfirmation] = useState(false);
 
   const handleCancel = async () => {
-    if (!confirm("Tem certeza que deseja cancelar esta reserva?")) {
-      return;
-    }
-
     setLoading(true);
     try {
       const result = await cancelarReserva(reservaId);
       if (result.success) {
-        console.log("Reserva cancelada com sucesso!");
+        toast.success("Reserva cancelada com sucesso!");
         onCancel();
+        setShowConfirmation(false);
       } else {
-        console.error(result.error || "Erro ao cancelar reserva");
+        toast.error(result.error || "Erro ao cancelar reserva");
       }
     } catch (error) {
       console.error("Erro ao cancelar reserva:", error);
-      console.error("Erro ao cancelar reserva");
+      toast.error("Erro ao cancelar reserva");
     } finally {
       setLoading(false);
     }
   };
 
+  if (showConfirmation) {
+    return (
+      <div className="flex flex-col items-center gap-2 min-w-0">
+        <div className="flex items-center gap-1 text-xs text-muted-foreground whitespace-nowrap">
+          <AlertTriangle className="h-3 w-3 text-amber-500" />
+          <span>Confirmar?</span>
+        </div>
+        <div className="flex gap-1">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleCancel}
+            disabled={loading}
+            className="text-red-600 hover:text-red-700 hover:bg-red-50 h-7 w-7 p-0"
+            title="Confirmar cancelamento"
+          >
+            {loading ? (
+              <Loader2 className="h-3 w-3 animate-spin" />
+            ) : (
+              <Check className="h-3 w-3" />
+            )}
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowConfirmation(false)}
+            disabled={loading}
+            className="text-gray-600 hover:text-gray-700 hover:bg-gray-50 h-7 w-7 p-0"
+            title="Cancelar ação"
+          >
+            <X className="h-3 w-3" />
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <Button
       variant="outline"
       size="sm"
-      onClick={handleCancel}
-      disabled={loading}
+      onClick={() => setShowConfirmation(true)}
       className="text-red-600 hover:text-red-700"
     >
       <X className="mr-1 h-3 w-3" />
-      {loading ? "Cancelando..." : "Cancelar"}
+      Cancelar
     </Button>
   );
 }
