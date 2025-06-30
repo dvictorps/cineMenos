@@ -105,11 +105,18 @@ export async function desativarSessao(id: string) {
     const sessao = await prisma.sessao.update({
       where: { id },
       data: { ativo: false },
+      include: {
+        filme: true,
+      },
     })
 
+    // Invalidar múltiplos caches relacionados
     revalidatePath('/admin/sessoes')
+    revalidatePath('/')
     revalidateTag(CACHE_TAGS.sessions)
+    revalidateTag(CACHE_TAGS.movies)
     revalidateTag(CACHE_TAGS.dashboard)
+    
     return { success: true, data: sessao }
   } catch (error) {
     console.error('Erro ao desativar sessão:', error)
@@ -122,11 +129,18 @@ export async function ativarSessao(id: string) {
     const sessao = await prisma.sessao.update({
       where: { id },
       data: { ativo: true },
+      include: {
+        filme: true,
+      },
     })
 
+    // Invalidar múltiplos caches relacionados
     revalidatePath('/admin/sessoes')
+    revalidatePath('/')
     revalidateTag(CACHE_TAGS.sessions)
+    revalidateTag(CACHE_TAGS.movies)
     revalidateTag(CACHE_TAGS.dashboard)
+    
     return { success: true, data: sessao }
   } catch (error) {
     console.error('Erro ao ativar sessão:', error)

@@ -13,9 +13,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { desativarFilme, ativarFilme } from "@/actions";
-import { useMovieCache } from "@/hooks/useMovieCache";
+import { useMovieCache, useInvalidateMovies } from "@/hooks/useMovieCache";
 import { useTextFilter } from "@/hooks/useFilters";
-import { useLoadingState } from "@/hooks/useLoadingState";
+
+import { toast } from "sonner";
 import { Loading } from "@/components/ui/loading";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { formatters } from "@/lib/formatters";
@@ -27,16 +28,17 @@ import {
   Clock,
   Filter,
   MoreHorizontal,
+  Loader2,
 } from "lucide-react";
 import Link from "next/link";
 
 export default function FilmesPage() {
   const [filtroTexto, setFiltroTexto] = useState("");
   const [filtroGenero, setFiltroGenero] = useState("todos");
+  const [loadingFilme, setLoadingFilme] = useState<string | null>(null);
 
   const { data: filmes, isLoading: loading, error } = useMovieCache();
-
-  const { withLoading } = useLoadingState();
+  const { invalidateMovies } = useInvalidateMovies();
 
   // Lógica de filtros com hook personalizado
   const filmesComTextoFiltrado = useTextFilter(filmes || [], filtroTexto, [
@@ -56,23 +58,28 @@ export default function FilmesPage() {
   );
 
   const handleToggleAtivo = async (filmeId: string, ativo: boolean) => {
-    const action = ativo ? desativarFilme : ativarFilme;
+    setLoadingFilme(filmeId);
 
-    await withLoading(
-      async () => {
-        const result = await action(filmeId);
-        if (result.success) {
-          // Cache will be invalidated automatically by server action
-        }
-        return result;
-      },
-      {
-        successMessage: ativo
-          ? "Filme desativado com sucesso!"
-          : "Filme ativado com sucesso!",
-        errorMessage: "Erro ao alterar status do filme",
+    try {
+      const action = ativo ? desativarFilme : ativarFilme;
+      const actionName = ativo ? "desativar" : "ativar";
+
+      const result = await action(filmeId);
+
+      if (result.success) {
+        toast.success(`Filme ${ativo ? "desativado" : "ativado"} com sucesso!`);
+
+        // Invalidar cache manualmente para atualização imediata
+        invalidateMovies();
+      } else {
+        toast.error(`Erro ao ${actionName} filme: ${result.error}`);
       }
-    );
+    } catch (error) {
+      console.error("Erro ao alterar status do filme:", error);
+      toast.error("Erro inesperado ao alterar status do filme");
+    } finally {
+      setLoadingFilme(null);
+    }
   };
 
   if (loading) {
@@ -258,13 +265,19 @@ export default function FilmesPage() {
                           onClick={() =>
                             handleToggleAtivo(filme.id, filme.ativo)
                           }
+                          disabled={loadingFilme === filme.id}
                           className={
                             filme.ativo
                               ? "text-red-600 hover:text-red-700"
                               : "text-green-600 hover:text-green-700"
                           }
                         >
-                          {filme.ativo ? (
+                          {loadingFilme === filme.id ? (
+                            <>
+                              <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                              {filme.ativo ? "Desativando..." : "Ativando..."}
+                            </>
+                          ) : filme.ativo ? (
                             <>
                               <Trash2 className="mr-1 h-3 w-3" />
                               Desativar
@@ -346,16 +359,27 @@ export default function FilmesPage() {
                           onClick={() =>
                             handleToggleAtivo(filme.id, filme.ativo)
                           }
+                          disabled={loadingFilme === filme.id}
                           className={`h-8 w-8 hover:scale-110 transition-all duration-200 ${
                             filme.ativo
                               ? "text-red-600 hover:text-red-700"
                               : "text-green-600 hover:text-green-700"
                           }`}
                           title={
-                            filme.ativo ? "Desativar Filme" : "Ativar Filme"
+                            loadingFilme === filme.id
+                              ? filme.ativo
+                                ? "Desativando..."
+                                : "Ativando..."
+                              : filme.ativo
+                              ? "Desativar Filme"
+                              : "Ativar Filme"
                           }
                         >
-                          <Trash2 className="h-3 w-3" />
+                          {loadingFilme === filme.id ? (
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                          ) : (
+                            <Trash2 className="h-3 w-3" />
+                          )}
                         </Button>
                       </div>
                     </div>
