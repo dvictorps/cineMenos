@@ -243,10 +243,12 @@ export default function HomePage() {
               >
                 <div className="relative h-80 bg-muted overflow-hidden rounded-t-lg">
                   {filme.banner ? (
-                    <img
+                    <Image
                       src={filme.banner}
                       alt={filme.titulo}
-                      className="w-full h-full object-cover object-center"
+                      fill
+                      className="object-cover object-center"
+                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 33vw, 20vw"
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">

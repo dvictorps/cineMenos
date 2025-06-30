@@ -18,6 +18,11 @@ const eslintConfig = [
       "node_modules/**/*",
       "build/**/*",
       "dist/**/*",
+      "coverage/**/*",
+      "prisma/migrations/**/*",
+      ".env*",
+      "*.log",
+      "public/**/*",
     ],
   },
 ];

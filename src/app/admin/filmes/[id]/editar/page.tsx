@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
 import { MovieForm, type MovieFormData } from "@/components/forms/movie-form";
 import { buscarFilmePorId, atualizarFilme } from "@/actions";
@@ -8,12 +8,13 @@ import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 interface EditarFilmePageProps {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 }
 
 export default function EditarFilmePage({ params }: EditarFilmePageProps) {
+  const { id } = use(params);
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [carregando, setCarregando] = useState(true);
@@ -29,7 +30,7 @@ export default function EditarFilmePage({ params }: EditarFilmePageProps) {
   useEffect(() => {
     const carregarFilme = async () => {
       try {
-        const result = await buscarFilmePorId(params.id);
+        const result = await buscarFilmePorId(id);
         if (result.success && result.data) {
           const filme = result.data;
           setFormData({
@@ -53,14 +54,14 @@ export default function EditarFilmePage({ params }: EditarFilmePageProps) {
     };
 
     carregarFilme();
-  }, [params.id, router]);
+  }, [id, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
-      const result = await atualizarFilme(params.id, {
+      const result = await atualizarFilme(id, {
         titulo: formData.titulo,
         descricao: formData.descricao,
         duracao: parseInt(formData.duracao),

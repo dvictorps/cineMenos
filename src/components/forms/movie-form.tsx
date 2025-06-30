@@ -11,7 +11,7 @@ import {
   classificacoes,
 } from "@/components/ui/classification-selector";
 import { ImageUpload } from "@/components/ui/image-upload";
-import { Save, Film, Clock, Loader2, Image } from "lucide-react";
+import { Save, Film, Clock, Loader2, Image as ImageIcon } from "lucide-react";
 
 interface MovieFormData {
   titulo: string;
@@ -147,7 +147,7 @@ export function MovieForm({
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
-              <Image className="h-5 w-5" />
+              <ImageIcon className="h-5 w-5" />
               <span>Banner do Filme</span>
             </CardTitle>
           </CardHeader>
