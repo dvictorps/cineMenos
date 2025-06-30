@@ -25,7 +25,7 @@ export function useActiveMovies() {
   })
 }
 
-// Hook para filmes da tela inicial (cache mais curto para dados mais dinâmicos)
+// Hook para filmes da tela inicial (cache de 5 minutos)
 export function useHomeMovies() {
   return useQuery({
     queryKey: ['home-movies'],
@@ -36,8 +36,8 @@ export function useHomeMovies() {
       }
       throw new Error(result.error || 'Erro ao carregar filmes')
     },
-    staleTime: 5 * 60 * 1000, // 5 minutos - cache mais curto para tela inicial
-    gcTime: 15 * 60 * 1000, // 15 minutos
+    staleTime: 5 * 60 * 1000, // 5 minutos
+    gcTime: 10 * 60 * 1000, // 10 minutos
     refetchOnMount: false, // Não recarrega se os dados ainda estão válidos
     refetchOnWindowFocus: false, // Não recarrega ao focar na janela
   })
