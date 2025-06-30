@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useEffect, useState } from "react";
+import { use, useEffect, useState, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -57,10 +57,55 @@ export default function SessaoPage({ params }: PageProps) {
   );
   const [loading, setLoading] = useState(true);
   const [reservando, setReservando] = useState(false);
+  const [atualizandoAssentos, setAtualizandoAssentos] = useState(false);
 
   // Dados do cliente
   const [nomeCliente, setNomeCliente] = useState("");
   const [emailCliente, setEmailCliente] = useState("");
+
+  const recarregarAssentosOcupados = useCallback(
+    async (showLoading = false) => {
+      if (showLoading) setAtualizandoAssentos(true);
+
+      try {
+        const assentosResult = await obterAssentosOcupados(resolvedParams.id);
+        if (assentosResult.success && assentosResult.data) {
+          const novosAssentosOcupados = assentosResult.data;
+          setAssentosOcupados(novosAssentosOcupados);
+
+          // Remover assentos selecionados que agora estão ocupados
+          setAssentosSelecionados((prevSelecionados) => {
+            const assentosValidos = prevSelecionados.filter(
+              (assento) => !novosAssentosOcupados.includes(assento)
+            );
+
+            // Se algum assento foi removido, mostrar toast informativo
+            if (assentosValidos.length < prevSelecionados.length) {
+              const assentosRemovidos = prevSelecionados.filter((assento) =>
+                novosAssentosOcupados.includes(assento)
+              );
+              toast.info(
+                `Assento${
+                  assentosRemovidos.length > 1 ? "s" : ""
+                } ${assentosRemovidos.join(", ")} ${
+                  assentosRemovidos.length > 1
+                    ? "foram ocupados"
+                    : "foi ocupado"
+                } por outro usuário`
+              );
+            }
+
+            return assentosValidos;
+          });
+        }
+      } catch (error) {
+        console.error("Erro ao recarregar assentos:", error);
+      } finally {
+        if (showLoading) setAtualizandoAssentos(false);
+      }
+    },
+    [resolvedParams.id]
+  );
 
   useEffect(() => {
     const carregarDados = async () => {
@@ -86,6 +131,40 @@ export default function SessaoPage({ params }: PageProps) {
 
     carregarDados();
   }, [resolvedParams.id]);
+
+  // Atualizar assentos quando a página ganha foco (para sincronizar com outras abas/usuários)
+  useEffect(() => {
+    const handleFocus = () => {
+      if (!loading && sessao) {
+        recarregarAssentosOcupados();
+      }
+    };
+
+    const handleVisibilityChange = () => {
+      if (!document.hidden && !loading && sessao) {
+        recarregarAssentosOcupados();
+      }
+    };
+
+    window.addEventListener("focus", handleFocus);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      window.removeEventListener("focus", handleFocus);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [loading, sessao, recarregarAssentosOcupados]);
+
+  // Atualizar assentos periodicamente para manter sincronização
+  useEffect(() => {
+    if (!sessao || loading) return;
+
+    const interval = setInterval(() => {
+      recarregarAssentosOcupados();
+    }, 30000); // Atualiza a cada 30 segundos
+
+    return () => clearInterval(interval);
+  }, [sessao, loading, recarregarAssentosOcupados]);
 
   const formatarData = (data: Date) => {
     return new Date(data).toLocaleDateString("pt-BR", {
@@ -148,11 +227,14 @@ export default function SessaoPage({ params }: PageProps) {
 
       if (result.success) {
         toast.success("Reserva realizada com sucesso!");
-        // Atualizar assentos ocupados
-        setAssentosOcupados([...assentosOcupados, ...assentosSelecionados]);
+
+        // Limpar dados do formulário imediatamente
         setAssentosSelecionados([]);
         setNomeCliente("");
         setEmailCliente("");
+
+        // Recarregar assentos ocupados do servidor para garantir sincronização
+        await recarregarAssentosOcupados(true);
       } else {
         toast.error(result.error || "Erro ao realizar reserva");
       }
@@ -360,11 +442,16 @@ export default function SessaoPage({ params }: PageProps) {
           <div className="lg:col-span-2">
             <Card>
               <CardHeader>
-                <CardTitle className="text-center">
+                <CardTitle className="text-center flex items-center justify-center gap-2">
                   Selecione seus assentos
+                  {atualizandoAssentos && (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  )}
                 </CardTitle>
                 <p className="text-center text-muted-foreground">
-                  Clique nos assentos para selecioná-los
+                  {atualizandoAssentos
+                    ? "Atualizando disponibilidade..."
+                    : "Clique nos assentos para selecioná-los"}
                 </p>
               </CardHeader>
               <CardContent>

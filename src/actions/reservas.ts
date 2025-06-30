@@ -56,6 +56,7 @@ export async function criarReserva(data: CriarReservaData) {
 
     revalidatePath('/admin/reservas')
     revalidatePath(`/admin/sessoes/${data.sessaoId}`)
+    revalidatePath(`/sessao/${data.sessaoId}`)
     revalidateTag(CACHE_TAGS.reservations)
     revalidateTag(CACHE_TAGS.sessions)
     revalidateTag(CACHE_TAGS.dashboard)
