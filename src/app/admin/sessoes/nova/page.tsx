@@ -73,15 +73,58 @@ export default function NovaSessaoPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Validações client-side
+    if (!formData.filmeId.trim()) {
+      toast.error("Filme é obrigatório");
+      return;
+    }
+    if (!formData.data.trim()) {
+      toast.error("Data é obrigatória");
+      return;
+    }
+    if (!formData.hora.trim()) {
+      toast.error("Hora é obrigatória");
+      return;
+    }
+    if (!formData.sala.trim()) {
+      toast.error("Sala é obrigatória");
+      return;
+    }
+    if (
+      !formData.linhas ||
+      parseInt(formData.linhas) < 3 ||
+      parseInt(formData.linhas) > 15
+    ) {
+      toast.error("Número de linhas deve estar entre 3 e 15");
+      return;
+    }
+    if (
+      !formData.colunas ||
+      parseInt(formData.colunas) < 5 ||
+      parseInt(formData.colunas) > 20
+    ) {
+      toast.error("Número de colunas deve estar entre 5 e 20");
+      return;
+    }
+    if (!formData.preco || parseFloat(formData.preco) <= 0) {
+      toast.error("Preço deve ser maior que zero");
+      return;
+    }
+
+    const dataHora = new Date(`${formData.data}T${formData.hora}`);
+    if (dataHora < new Date()) {
+      toast.error("Data e hora devem ser futuras");
+      return;
+    }
+
     setLoading(true);
 
     try {
-      const dataHora = new Date(`${formData.data}T${formData.hora}`);
-
       const result = await criarSessao({
-        filmeId: formData.filmeId,
+        filmeId: formData.filmeId.trim(),
         dataHora,
-        sala: formData.sala,
+        sala: formData.sala.trim(),
         linhas: parseInt(formData.linhas),
         colunas: parseInt(formData.colunas),
         preco: parseFloat(formData.preco),

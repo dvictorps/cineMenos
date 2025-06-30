@@ -7,14 +7,31 @@ import type { CreateFilmeData } from '@/lib/types'
 
 export async function criarFilme(data: CreateFilmeData) {
   try {
+    // Validações server-side
+    if (!data.titulo?.trim()) {
+      return { success: false, error: 'Título é obrigatório' }
+    }
+    if (!data.descricao?.trim()) {
+      return { success: false, error: 'Descrição é obrigatória' }
+    }
+    if (!data.genero?.trim()) {
+      return { success: false, error: 'Gênero é obrigatório' }
+    }
+    if (!data.duracao || data.duracao <= 0) {
+      return { success: false, error: 'Duração deve ser maior que zero' }
+    }
+    if (!data.classificacao?.trim()) {
+      return { success: false, error: 'Classificação é obrigatória' }
+    }
+
     const filme = await prisma.filme.create({
       data: {
-        titulo: data.titulo,
-        descricao: data.descricao,
+        titulo: data.titulo.trim(),
+        descricao: data.descricao.trim(),
         duracao: data.duracao,
-        genero: data.genero,
+        genero: data.genero.trim(),
         classificacao: data.classificacao,
-        banner: data.banner,
+        banner: data.banner?.trim() || null,
       },
     })
 
@@ -70,15 +87,32 @@ export async function buscarFilmePorId(id: string) {
 
 export async function atualizarFilme(id: string, data: CreateFilmeData) {
   try {
+    // Validações server-side
+    if (!data.titulo?.trim()) {
+      return { success: false, error: 'Título é obrigatório' }
+    }
+    if (!data.descricao?.trim()) {
+      return { success: false, error: 'Descrição é obrigatória' }
+    }
+    if (!data.genero?.trim()) {
+      return { success: false, error: 'Gênero é obrigatório' }
+    }
+    if (!data.duracao || data.duracao <= 0) {
+      return { success: false, error: 'Duração deve ser maior que zero' }
+    }
+    if (!data.classificacao?.trim()) {
+      return { success: false, error: 'Classificação é obrigatória' }
+    }
+
     const filme = await prisma.filme.update({
       where: { id },
       data: {
-        titulo: data.titulo,
-        descricao: data.descricao,
+        titulo: data.titulo.trim(),
+        descricao: data.descricao.trim(),
         duracao: data.duracao,
-        genero: data.genero,
+        genero: data.genero.trim(),
         classificacao: data.classificacao,
-        banner: data.banner,
+        banner: data.banner?.trim() || null,
       },
     })
 

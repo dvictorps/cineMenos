@@ -99,6 +99,7 @@ export function MovieForm({
                 <GenreSelect
                   value={formData.genero}
                   onChange={(value) => onInputChange("genero", value)}
+                  required
                 />
               </div>
 
